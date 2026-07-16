@@ -101,8 +101,6 @@
   .brand { font-family:var(--font-display); font-weight:700; font-size:1.1rem; letter-spacing:-.03em;
            color:var(--fg); text-decoration:none; }
   .brand .mk { color:var(--accent); }
-  .brand::before { content:""; display:inline-block; width:.62rem; height:.62rem;
-    background:var(--accent); margin-right:.55rem; vertical-align:middle; }
   .brand:hover { color:var(--fg); }
   .nav { display:flex; align-items:center; gap:1.1rem; }
   .nav a { font-family:var(--font-mono); font-size:.8rem; text-decoration:none; color:var(--muted); }
