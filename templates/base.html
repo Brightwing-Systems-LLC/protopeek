@@ -1,0 +1,98 @@
+{% load static tailwind_cli %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ PRODUCT_NAME }}{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+  {% comment %} No-flash theme: set [data-theme] before the stylesheet loads. {% endcomment %}
+  <script>(function(){var p=localStorage.getItem("protopeek-theme")||"system";
+    var sys=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
+    document.documentElement.dataset.theme=p==="system"?sys:p;})();</script>
+  {% if DEBUG %}
+    {% comment %}
+      Dev only: the unfingerprinted site.css gets cached hard by the browser, so
+      recompiles don't show without a manual hard-refresh. A per-request version
+      query forces a fresh fetch every load. Prod uses {% templatetag openblock %} tailwind_css {% templatetag closeblock %}
+      (hashed filename), which caches correctly on its own.
+    {% endcomment %}
+    <link rel="stylesheet" href="{% static 'css/site.css' %}?v={% now 'U' %}">
+  {% else %}
+    {% tailwind_css %}
+  {% endif %}
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/" style="display:inline-flex;align-items:center;gap:.45rem;">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12c-2.4 4 -5.4 6 -9 6c-3.6 0 -6.6 -2 -9 -6c2.4 -4 5.4 -6 9 -6c3.6 0 6.6 2 9 6"/>
+        <circle cx="12" cy="12" r="2.6" fill="var(--accent)" stroke="none"/>
+      </svg>{{ PRODUCT_NAME }}</a>
+    <nav class="nav">
+      <span class="theme-switch" role="group" aria-label="Theme">
+        <button type="button" data-theme-set="light" title="Light">☀</button>
+        <button type="button" data-theme-set="dark" title="Dark">☾</button>
+        <button type="button" data-theme-set="system" title="System">⊙</button>
+      </span>
+      {% comment %}
+        Public signup/login is intentionally unlinked — the product is agent/API-driven
+        and only superusers log in (via /admin). Authenticated owners (token sign-in at /token)
+        still get the dashboard + account menu.
+      {% endcomment %}
+      {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        {% include "account/_account_menu.html" %}
+      {% endif %}
+    </nav>
+  </header>
+
+  {% if messages %}
+    <ul class="messages">
+      {% for m in messages %}<li class="msg msg-{{ m.tags }}">{{ m }}</li>{% endfor %}
+    </ul>
+  {% endif %}
+
+  <main class="container">
+    {% block main %}{% endblock %}
+  </main>
+
+  <footer class="footer">
+    {{ PRODUCT_NAME }} — a product of {{ COMPANY_NAME }} ·
+    <a href="{% url 'pages:terms' %}">Terms</a> ·
+    <a href="{% url 'pages:privacy' %}">Privacy</a> ·
+    © {% now "Y" %} {{ COMPANY_SHORT }}
+  </footer>
+
+  <script>
+    (function(){
+      var KEY="protopeek-theme";
+      function resolve(p){return p==="system"?(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"):p;}
+      function reflect(){
+        var p=localStorage.getItem(KEY)||"system";
+        document.documentElement.dataset.theme=resolve(p);
+        document.querySelectorAll("[data-theme-set]").forEach(function(b){
+          b.setAttribute("aria-pressed", b.dataset.themeSet===p);
+        });
+      }
+      document.querySelectorAll("[data-theme-set]").forEach(function(b){
+        b.addEventListener("click",function(){localStorage.setItem(KEY,b.dataset.themeSet);reflect();});
+      });
+      matchMedia("(prefers-color-scheme: light)").addEventListener("change",function(){
+        if((localStorage.getItem(KEY)||"system")==="system") reflect();
+      });
+      reflect();
+      {% comment %} Close the account menu on outside-click / Esc. {% endcomment %}
+      document.addEventListener("click",function(e){
+        document.querySelectorAll("details.account-menu[open]").forEach(function(d){
+          if(!d.contains(e.target)) d.removeAttribute("open");
+        });
+      });
+      document.addEventListener("keydown",function(e){
+        if(e.key==="Escape") document.querySelectorAll("details.account-menu[open]").forEach(function(d){d.removeAttribute("open");});
+      });
+    })();
+  </script>
+  {% block extra_body %}{% endblock %}
+</body>
+</html>

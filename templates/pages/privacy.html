@@ -1,0 +1,158 @@
+{% extends "pages/_legal_base.html" %}
+{% block title %}Privacy Policy — {{ PRODUCT_NAME }}{% endblock %}
+
+{% block legal %}
+  <h1>Privacy Policy</h1>
+
+  <p>This Privacy Policy describes how
+  <a href="https://brightwingsystems.com" target="_blank" rel="noopener">{{ COMPANY_NAME }}</a>
+  ("we", "us", or "our") collects, uses, and protects information when you use
+  {{ PRODUCT_NAME }} ("the Service") available at protopeek.dev. By using the Service, you
+  agree to the collection and use of information in accordance with this policy.</p>
+
+  <h2>1. Information We Collect</h2>
+
+  <h3>Prototype content</h3>
+  <p>When you upload a prototype, we collect the HTML file you submit along with the metadata
+  you provide (a display name and the reviewer allowlist — email domains and addresses).</p>
+
+  <h3>Data received via AI coding tools</h3>
+  <p>{{ PRODUCT_NAME }} is designed to be driven by AI coding agents (such as Claude Code,
+  Codex, or Gemini CLI). When you upload through an agent, the upload payload — the HTML file
+  and its metadata — is sent from your machine to our API. We receive and store only that
+  payload. We do not receive, access, or store your conversations with the agent.</p>
+
+  <h3>Owner tokens and accounts</h3>
+  <p>Owners are identified by an access token, which can be minted without providing any
+  personal information. If you claim a token for recovery, we collect the email address you
+  provide.</p>
+
+  <h3>Reviewer identity</h3>
+  <p>Reviewers self-assert an email address once per browser. We use it to check the
+  prototype's allowlist, to attribute feedback, and we remember it in a signed cookie so it
+  doesn't need to be re-entered.</p>
+
+  <h3>Feedback data</h3>
+  <p>When a reviewer leaves feedback, we collect the note and its type, threaded replies, the
+  on-page anchors that position the pin (CSS selectors, text snippets), an optional screenshot
+  of the annotated region of the rendered prototype, and capture context (page URL, viewport
+  size, browser user-agent).</p>
+
+  <h3>Usage data</h3>
+  <p>We collect standard server logs (IP addresses, browser type, pages visited, timestamps) to
+  operate the Service and prevent abuse, including short-lived rate-limit counters keyed by IP
+  address.</p>
+
+  <h3>Cookies</h3>
+  <p>We use only essential and functional cookies:</p>
+  <ul>
+    <li><code>protopeek_sessionid</code> — session management (signed-in owners only)</li>
+    <li><code>protopeek_csrftoken</code> — CSRF protection</li>
+    <li><code>protopeek_reviewer</code> — the signed reviewer-identity cookie (~90 days)</li>
+  </ul>
+  <p>We do not use analytics, advertising, or third-party tracking cookies.</p>
+
+  <h2>2. Legal Basis for Processing</h2>
+  <p>We process your personal information on the following legal bases:</p>
+  <ul>
+    <li><strong>Contract performance:</strong> to provide the Service you have requested,
+      including hosting prototypes, gating access, and delivering feedback</li>
+    <li><strong>Legitimate interest:</strong> to operate, maintain, and improve the Service,
+      detect abuse, and ensure security</li>
+    <li><strong>Consent:</strong> where required by applicable law, such as for optional
+      communications</li>
+  </ul>
+
+  <h2>3. How We Use Your Information</h2>
+  <ul>
+    <li>To host prototypes and serve them to their invited reviewers</li>
+    <li>To gate access against each prototype's allowlist and attribute feedback to its
+      author</li>
+    <li>To return feedback to the prototype's owner, including through the API</li>
+    <li>To communicate with you about the Service (e.g., security alerts, updates)</li>
+    <li>To respond to support requests</li>
+    <li>To detect and prevent fraud, abuse, or security incidents</li>
+  </ul>
+
+  <h2>4. Data Sharing</h2>
+  <p>We do not sell your personal information. Prototypes are private by design: a prototype is
+  reachable only through its unguessable link, by reviewers whose email matches its allowlist,
+  and only until it expires. Feedback is visible to the prototype's owner and to that
+  prototype's invited reviewers. Beyond that, we share information only in the following
+  circumstances:</p>
+  <ul>
+    <li><strong>Service providers:</strong> we use third-party providers to operate the
+      Service, bound to access data only as necessary to perform their functions. These
+      include Postmark (transactional email delivery) and our cloud hosting provider
+      (Hetzner).</li>
+    <li><strong>Legal requirements:</strong> we may disclose information if required by law,
+      subpoena, or other legal process.</li>
+    <li><strong>Business transfers:</strong> if {{ COMPANY_NAME }} is involved in a merger,
+      acquisition, or sale of assets, your information may be transferred as part of that
+      transaction.</li>
+  </ul>
+
+  <h2>5. Data Retention</h2>
+  <p>Every prototype is retained for a flat 30 days from upload, after which its link stops
+  resolving. Stored prototype content and feedback records persist so owners can re-pull past
+  feedback, until the owner deletes them or requests deletion — deletion requests are honored
+  within 30 days, except where retention is required by law. The reviewer-identity cookie
+  expires after about 90 days. Server logs are kept for a limited period for security and
+  operations.</p>
+
+  <h2>6. International Data Transfers</h2>
+  <p>Our servers are located in the United States. If you access the Service from outside the
+  United States, your information may be transferred to, stored, and processed there. By using
+  the Service, you consent to the transfer of your information as described in this policy. We
+  take appropriate measures to ensure your data is treated securely regardless of where it is
+  processed.</p>
+
+  <h2>7. Data Security</h2>
+  <p>We implement industry-standard security measures to protect your information, including
+  encryption in transit (TLS), signed cookies, access controls, and regular backups. However,
+  no method of transmission or storage is completely secure, and we cannot guarantee absolute
+  security.</p>
+
+  <h2>8. Your Rights</h2>
+  <p>Owners may:</p>
+  <ul>
+    <li>Deactivate a prototype or let its link expire at any time, via the dashboard or API</li>
+    <li>Revoke or rotate access tokens at any time</li>
+    <li>Request a copy or deletion of stored data by contacting
+      <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a></li>
+  </ul>
+  <p>Reviewers may request access to or deletion of feedback attributed to their email address
+  by contacting <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a>.</p>
+
+  <h3>California residents (CCPA)</h3>
+  <p>If you are a California resident, you have the right to know what personal information we
+  collect, use, and disclose; to request deletion of your personal information; and to opt out
+  of the sale of your personal information. We do not sell your personal information. To
+  exercise these rights, contact us at
+  <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a>. We will not discriminate
+  against you for exercising any of these rights.</p>
+
+  <h3>European Economic Area, UK, and Swiss residents (GDPR)</h3>
+  <p>If you are located in the EEA, UK, or Switzerland, you have the right to access your
+  personal data; rectify inaccurate data; request erasure of your data; restrict or object to
+  processing; request data portability; and lodge a complaint with your local data protection
+  supervisory authority. To exercise these rights, contact us at
+  <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a>.</p>
+
+  <h2>9. Children's Privacy</h2>
+  <p>The Service is intended for users aged 13 and older. We do not knowingly collect personal
+  information from children under 13. If you believe a child under 13 has provided us with
+  personal information, please contact us at
+  <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a> and we will take steps to delete
+  it promptly.</p>
+
+  <h2>10. Changes to This Policy</h2>
+  <p>We may update this Privacy Policy from time to time. We will notify you of material
+  changes by posting the updated policy on this page and updating the "Last updated" date.
+  Your continued use of the Service after changes constitutes acceptance of the revised
+  policy.</p>
+
+  <h2>11. Contact Us</h2>
+  <p>If you have questions about this Privacy Policy, contact us at
+  <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a>.</p>
+{% endblock %}

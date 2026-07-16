@@ -1,0 +1,31 @@
+name: Bug report
+description: Something broken in ProtoPeek (the app or the agent skills)
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, what happened instead?
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. /proto-up ./demo.html
+        2. Open the link on iOS Safari
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where?
+      placeholder: protopeek.dev / self-hosted / Claude Code skill / Codex skill
+  - type: textarea
+    id: context
+    attributes:
+      label: Environment / extra context
+      description: Browser + OS for viewer bugs, agent + version for skill bugs, logs if you have them. Never include an owner token.

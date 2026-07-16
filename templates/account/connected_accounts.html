@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load socialaccount %}
+{% block title %}Connected accounts — {{ PRODUCT_NAME }}{% endblock %}
+
+{% block main %}
+  <h1>Connected accounts</h1>
+  <p class="sub muted">Link or unlink third-party sign-in.</p>
+
+  <div class="card" style="max-width:36rem;">
+    <h3>Connected</h3>
+    {% for account in connected %}
+      <div class="proto" style="align-items:center;margin-top:.6rem;">
+        <div>{% include 'partials/icon.html' with name='link' %} {{ account.provider|title }}
+          <span class="meta">({{ account.uid }})</span></div>
+        <form method="post" action="{% url 'accounts:disconnect_social' %}" class="inline">
+          {% csrf_token %}
+          <input type="hidden" name="account_id" value="{{ account.pk }}">
+          <button class="btn btn-sm btn-danger" type="submit">Disconnect</button>
+        </form>
+      </div>
+    {% empty %}
+      <p class="muted">No third-party accounts connected.</p>
+    {% endfor %}
+
+    {% if google_enabled %}
+      <h3 style="margin-top:1.2rem;">Available</h3>
+      <a class="btn btn-ghost btn-sm" href="{% provider_login_url 'google' process='connect' %}">
+        {% include 'partials/icon.html' with name='link' %} Connect Google
+      </a>
+    {% endif %}
+    {% if not has_usable_password %}
+      <p class="meta" style="margin-top:1rem;">You sign in with a third-party account only. Set a password before disconnecting it.</p>
+    {% endif %}
+  </div>
+{% endblock %}

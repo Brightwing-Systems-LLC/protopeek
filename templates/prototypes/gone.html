@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Link expired — ProtoPeek{% endblock %}
+
+{% block main %}
+  <div class="center-narrow">
+    <div class="card">
+      <h3>This link has expired</h3>
+      <p class="muted">
+        “{{ prototype.name }}” is no longer available. Ask the owner to re-open it or
+        send a fresh link.
+      </p>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Profile — {{ PRODUCT_NAME }}{% endblock %}
+
+{% block main %}
+  <h1>Profile</h1>
+  <p class="sub muted">Your name and timezone.</p>
+  <div class="card" style="max-width:32rem;">
+    <form method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.errors %}<div class="msg-error mono" style="border:none;padding:.2rem 0;">{{ field.errors|join:", " }}</div>{% endif %}
+      {% endfor %}
+      <div style="margin-top:1rem;"><button class="btn" type="submit">Save</button></div>
+    </form>
+  </div>
+{% endblock %}

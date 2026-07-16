@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Not authorized — ProtoPeek{% endblock %}
+
+{% block main %}
+  <div class="center-narrow">
+    <div class="card">
+      <h3>Not on the reviewer list</h3>
+      <p class="muted">
+        <span class="mono">{{ email }}</span> isn’t allowed to view this prototype.
+        Ask the owner to add your email or domain to the allowlist.
+      </p>
+    </div>
+  </div>
+{% endblock %}

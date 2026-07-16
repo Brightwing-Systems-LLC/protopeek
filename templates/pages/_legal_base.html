@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block main %}
+  <article class="prose">
+    <p class="muted">Last updated: {{ LEGAL_EFFECTIVE_DATE }}</p>
+    {% block legal %}{% endblock %}
+  </article>
+{% endblock %}

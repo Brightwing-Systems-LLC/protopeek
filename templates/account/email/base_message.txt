@@ -1,0 +1,10 @@
+{% load i18n %}{% autoescape off %}{% blocktrans %}Hi,{% endblocktrans %}
+
+{% block content %}{% endblock content %}
+
+{% blocktrans %}Thanks,
+The ProtoPeek Team{% endblocktrans %}
+
+{% blocktrans with site_domain=current_site.domain %}This is an automated message from ProtoPeek — share prototypes, get annotated feedback.
+{{ site_domain }}{% endblocktrans %}
+{% endautoescape %}

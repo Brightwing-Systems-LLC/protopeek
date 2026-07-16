@@ -1,0 +1,13 @@
+{
+  "name": "protopeek",
+  "description": "Share HTML prototypes behind private, time-boxed links and pull annotated reviewer feedback back into your agent — /proto-up, /proto-status, /proto-feedback, /proto-list.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Brightwing Systems, LLC",
+    "url": "https://protopeek.dev"
+  },
+  "homepage": "https://protopeek.dev",
+  "repository": "https://github.com/Brightwing-Systems-LLC/protopeek",
+  "license": "MIT",
+  "keywords": ["prototype", "review", "feedback", "html", "annotation"]
+}

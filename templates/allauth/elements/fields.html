@@ -1,0 +1,25 @@
+{% load allauth %}
+{% if attrs.form.non_field_errors %}
+    <div class="msg msg-error">
+        {% for error in attrs.form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+{% endif %}
+{% for field in attrs.form.hidden_fields %}{{ field }}{% endfor %}
+{% for field in attrs.form.visible_fields %}
+    <div>
+        {% if field.field.widget.input_type == "checkbox" %}
+            <label for="{{ field.id_for_label }}">{{ field }} {{ field.label }}</label>
+        {% else %}
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+        {% endif %}
+        {% if field.help_text %}
+            <div class="meta muted">{{ field.help_text }}</div>
+        {% endif %}
+        {% if field.errors %}
+            <div class="msg msg-error">
+                {% for error in field.errors %}<div>{{ error }}</div>{% endfor %}
+            </div>
+        {% endif %}
+    </div>
+{% endfor %}

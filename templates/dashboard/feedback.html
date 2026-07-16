@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Feedback — {{ prototype.name }}{% endblock %}
+
+{% block main %}
+  <p><a href="{% url 'dashboard' %}">← Dashboard</a></p>
+  <h1>Feedback · {{ prototype.name }}</h1>
+  <p class="sub">
+    {{ annotations|length }} annotation{{ annotations|length|pluralize }}.
+    The agent-shaped payload is at
+    <span class="mono">GET /api/prototypes/{{ prototype.uuid }}/feedback</span>.
+  </p>
+
+  {% for a in annotations %}
+    <div class="card">
+      <div class="proto">
+        <div style="flex:1;">
+          <span class="tag">{{ a.feedback_type }}</span>
+          {% if a.resolved %}<span class="pill pill-live">resolved</span>{% endif %}
+          <p style="margin:6px 0;">{{ a.note }}</p>
+          <div class="meta">
+            {{ a.author_email }} · v{{ a.version.version_number }} · {{ a.created_at }}
+          </div>
+          {% if a.css_selector %}
+            <div class="mono muted" style="margin-top:6px;">⌖ {{ a.css_selector }}</div>
+          {% endif %}
+          {% for c in a.comments.all %}
+            <div style="margin-top:10px; padding-left:12px; border-left:2px solid var(--border);">
+              <div class="mono muted" style="font-size:.78rem;">{{ c.author_email }} · {{ c.created_at }}</div>
+              <div>{{ c.body }}</div>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  {% empty %}
+    <p class="muted">No feedback yet. Share the link and check back.</p>
+  {% endfor %}
+{% endblock %}

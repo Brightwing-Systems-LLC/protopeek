@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block title %}Enter — {{ prototype.name }}{% endblock %}
+
+{% block main %}
+  <div class="center-narrow">
+    <div class="card">
+      <h3>Review “{{ prototype.name }}”</h3>
+      <p class="muted">Enter your work email to view this prototype and leave feedback.
+        You won’t need a password.</p>
+      <form method="post">
+        {% csrf_token %}
+        <label>Email</label>
+        {% comment %}
+          No autofocus: on iOS Safari, autofocus after the /p/<uuid> → /enter redirect can
+          leave the field inert until a manual refresh. Let the reviewer tap to focus.
+        {% endcomment %}
+        <input type="email" name="email" placeholder="you@company.com" required
+               autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false">
+        <div style="margin-top:14px;">
+          <button class="btn" type="submit">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+{% endblock %}

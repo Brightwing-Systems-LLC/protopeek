@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Sign in with your token — {{ PRODUCT_NAME }}{% endblock %}
+
+{% block main %}
+  <div class="center-narrow">
+    <div class="card">
+      <div class="tag">Token sign-in</div>
+      <h3 style="margin:.4rem 0 .3rem;">Sign in with your token</h3>
+      <p class="muted" style="font-size:.9rem;">Paste your <span class="mono">pp_…</span> token to see and
+        manage every prototype you've uploaded. No password needed.</p>
+      <form method="post">
+        {% csrf_token %}
+        <label>Token</label>
+        <input type="password" name="token" placeholder="pp_…" required autofocus autocomplete="off">
+        <div style="margin-top:1rem;"><button class="btn" type="submit">Sign in</button></div>
+      </form>
+      <p class="muted" style="font-size:.82rem;margin-top:1rem;">
+        No token yet? Point your agent at
+        <a href="{% url 'pages:agent' %}"><span class="mono">{{ BASE_URL }}/agent.md</span></a>,
+        or mint one:
+        <span class="mono">curl -X POST {{ BASE_URL }}/api/tokens</span>
+      </p>
+    </div>
+  </div>
+{% endblock %}

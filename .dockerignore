@@ -1,0 +1,42 @@
+# Virtualenv / build artifacts (the image builds its own /app/.venv)
+.venv/
+*.egg-info/
+build/
+dist/
+
+# VCS
+.git/
+.gitignore
+
+# Python caches
+__pycache__/
+*.py[cod]
+*.pyc
+
+# Local DB (prod uses Postgres)
+db.sqlite3
+db.sqlite3-journal
+
+# Env / secrets — never bake into the image (compose provides .env.prod at runtime)
+.env
+.env.*
+
+# Collected static — rebuilt inside the image by collectstatic
+staticfiles/
+
+# Auto-downloaded Tailwind standalone binary
+.django_tailwind_cli/
+
+# Node (unused, but keep the image clean if anything appears)
+node_modules/
+
+# Tooling caches / coverage
+.ruff_cache/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor / OS cruft
+.DS_Store
+.idea/
+.vscode/

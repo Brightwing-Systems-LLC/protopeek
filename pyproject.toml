@@ -1,0 +1,54 @@
+[project]
+name = "protopeek"
+version = "0.1.0"
+description = "Host self-contained HTML prototypes, share them behind a lightweight allowlist, and collect annotated feedback."
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "django>=6.0,<7.0",
+    "django-ninja>=1.3",
+    "django-allauth[socialaccount]>=65.0",
+    "django-timezone-field>=7.0",
+    "whitenoise>=6.7",
+    "gunicorn>=23.0",
+    "psycopg[binary]>=3.2",
+    "environs>=15.0.1",
+    "celery>=5.6.3",
+    "django-celery-beat>=2.9.0",
+    "redis>=8.0.1",
+    "django-redis>=7.0.0",
+    "django-unfold>=0.100.0",
+    "django-constance[database]>=4.3.5",
+    "django-tailwind-cli>=4.6.2",
+    "django-anymail[postmark]>=15.0",
+    "uvicorn>=0.51.0",
+    "django-extensions>=4.1",
+    "pillow>=12.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "django-debug-toolbar>=7.0.0",
+    "pytest>=8.3,<9",
+    "pytest-django>=4.9",
+    "pytest-playwright>=0.8.0",
+    "ruff>=0.7",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    # isort - sorts imports
+    "I",
+    # pyupgrade - modernizes syntax
+    "UP",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F403"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py", "*_test.py", "tests.py"]
+addopts = "--reuse-db"
+
+[tool.coverage.run]
+omit = ["*/migrations/*"]

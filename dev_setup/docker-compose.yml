@@ -1,0 +1,32 @@
+name: protopeek-dev
+
+# Dev infrastructure only — Postgres + Redis. The web server and Celery
+# worker/beat run on the host via `just dev` / `just worker` / `just beat`,
+# not in containers. (BWS starter §9.)
+services:
+  postgres:
+    image: postgres:16
+    container_name: protopeek_dev_postgres
+    restart: unless-stopped
+    command: postgres -c max_connections=200
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-protopeek_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-protopeek_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "${POSTGRES_PORT:-5547}:5432"
+    volumes:
+      - dev_postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    container_name: protopeek_dev_redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6494}:6379"
+    volumes:
+      - dev_redis_data:/data
+
+volumes:
+  dev_postgres_data: {}
+  dev_redis_data: {}

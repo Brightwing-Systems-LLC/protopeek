@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tempo — This Week</title>
+<style>
+  :root{
+    --bg:#eef1f5; --card:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e6eaf0;
+    --brand:#10b981; --brand-2:#34d399; --track:#e7ebf1; --coral:#fb7185; --amber:#f59e0b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1060px;margin:0 auto;padding:26px 26px 60px}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+  .brand .dot{width:26px;height:26px;border-radius:8px;background:linear-gradient(135deg,var(--brand),var(--brand-2));
+    display:grid;place-items:center;color:#fff;font-size:15px}
+  .head-right{display:flex;align-items:center;gap:14px}
+  .range{color:var(--muted);font-size:.9rem;font-weight:600}
+  #cta{border:none;background:var(--ink);color:#fff;font-weight:700;font-size:.85rem;
+    padding:9px 14px;border-radius:10px;cursor:pointer}
+  .avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#fbbf24,#fb7185)}
+
+  h1{font-size:1.5rem;margin:0 0 2px;letter-spacing:-.02em}
+  .sub{color:var(--muted);margin:0 0 20px;font-size:.95rem}
+
+  .grid{display:grid;grid-template-columns:340px 1fr;gap:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04),0 8px 24px rgba(16,24,40,.05)}
+
+  /* Ring */
+  #ring{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .ring{width:200px;height:200px;border-radius:50%;
+    background:conic-gradient(var(--brand) 0% 72%, var(--track) 72% 100%);
+    display:grid;place-items:center;position:relative}
+  .ring::after{content:"";position:absolute;width:150px;height:150px;border-radius:50%;background:var(--card)}
+  .ring .val{position:relative;z-index:1}
+  .ring .pct{font-size:2.6rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+  .ring .lab{color:var(--muted);font-size:.8rem;font-weight:600;margin-top:2px}
+  #ring .goal{margin-top:16px;color:var(--muted);font-size:.88rem}
+  #ring .goal b{color:var(--ink)}
+
+  /* Stats + chart column */
+  .col{display:flex;flex-direction:column;gap:18px}
+  #stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .tile{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .tile .k{color:var(--muted);font-size:.74rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+  .tile .v{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;margin-top:6px}
+  .tile .v small{font-size:.9rem;color:var(--muted);font-weight:600}
+
+  #chart .bars{display:flex;align-items:flex-end;gap:14px;height:130px;margin-top:6px}
+  #chart .bar{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;height:100%;justify-content:flex-end}
+  #chart .bar i{width:100%;max-width:34px;border-radius:7px 7px 3px 3px;background:linear-gradient(180deg,var(--brand-2),var(--brand))}
+  #chart .bar span{color:var(--muted);font-size:.78rem;font-weight:600}
+  #chart .bar.today i{background:linear-gradient(180deg,#fbbf24,var(--amber))}
+
+  .list{display:flex;flex-direction:column}
+  .row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+  .row:first-child{border-top:none}
+  .row .ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;font-size:18px;flex:none}
+  .row .ic.run{background:#dcfce7}.row .ic.str{background:#fee2e2}.row .ic.walk{background:#e0f2fe}
+  .row .t{flex:1}
+  .row .t b{display:block;font-size:.95rem}
+  .row .t span{color:var(--muted);font-size:.82rem}
+  .row .m{color:var(--muted);font-size:.85rem;font-weight:600;font-variant-numeric:tabular-nums}
+  .sec-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+  .sec-h h3{margin:0;font-size:1rem}
+  .sec-h a{color:var(--brand);font-weight:700;font-size:.82rem;text-decoration:none}
+  @media(max-width:820px){.grid{grid-template-columns:1fr}#stats{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand"><span class="dot">◔</span> Tempo</div>
+      <div class="head-right">
+        <span class="range">Mon 8 – Sun 14 Jul</span>
+        <button id="cta" onclick="this.textContent='Let’s go →'">Start workout</button>
+        <div class="avatar" aria-label="You"></div>
+      </div>
+    </header>
+
+    <h1>This week</h1>
+    <p class="sub">You're ahead of pace — nice work keeping the streak alive.</p>
+
+    <div class="grid">
+      <div class="card" id="ring">
+        <div class="ring"><div class="val"><div class="pct">72%</div><div class="lab">weekly goal</div></div></div>
+        <div class="goal"><b>3h 36m</b> of your <b>5h</b> goal <span style="opacity:.5"> · 1h 24m to go</span></div>
+      </div>
+
+      <div class="col">
+        <div id="stats">
+          <div class="tile"><div class="k">Workouts</div><div class="v">4</div></div>
+          <div class="tile"><div class="k">Active</div><div class="v">3<small>h</small> 12<small>m</small></div></div>
+          <div class="tile"><div class="k">Streak</div><div class="v">11<small> days</small></div></div>
+          <div class="tile"><div class="k">Calories</div><div class="v">2,412</div></div>
+        </div>
+
+        <div class="card" id="chart">
+          <div class="sec-h" style="display:flex;align-items:baseline;justify-content:space-between"><h3>Daily activity</h3><span style="font-size:.7rem;color:#9aa1ad;letter-spacing:.04em;text-transform:uppercase">active minutes</span></div>
+          <div class="bars" style="border-bottom:1px solid #e5e7eb;padding-bottom:2px">
+            <div class="bar"><i style="height:38%"></i><span>M</span></div>
+            <div class="bar"><i style="height:66%"></i><span>T</span></div>
+            <div class="bar"><i style="height:22%"></i><span>W</span></div>
+            <div class="bar"><i style="height:84%"></i><span>T</span></div>
+            <div class="bar"><i style="height:30%"></i><span>F</span></div>
+            <div class="bar"><i style="height:58%"></i><span>S</span></div>
+            <div class="bar today"><i style="height:46%"></i><span>S</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="activity" style="margin-top:18px">
+      <div class="sec-h"><h3>Recent activity</h3><a href="#">See all</a></div>
+      <div class="list">
+        <div class="row"><div class="ic run">🏃</div><div class="t"><b>Morning run</b><span>Today · 7:02 AM</span></div><div class="m">5.2 km · 27m</div></div>
+        <div class="row"><div class="ic str">💪</div><div class="t"><b>Strength — upper</b><span>Yesterday</span></div><div class="m">42m</div></div>
+        <div class="row"><div class="ic walk">🚶</div><div class="t"><b>Evening walk</b><span>Thu</span></div><div class="m">3.1 km · 34m</div></div>
+      </div>
+    </div>
+  </div>
+  <script>console.log("Tempo weekly dashboard prototype loaded");</script>
+</body>
+</html>

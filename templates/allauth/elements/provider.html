@@ -1,0 +1,7 @@
+{% load allauth %}
+<a class="btn btn-ghost"
+   title="{{ attrs.name }}"
+   href="{{ attrs.href }}"
+   {% if attrs.provider_id %}data-provider="{{ attrs.provider_id }}"{% endif %}>
+    Continue with {{ attrs.name }}
+</a>

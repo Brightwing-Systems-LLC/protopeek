@@ -1,0 +1,5 @@
+{% load allauth %}
+<div class="msg{% if attrs.level == 'error' or attrs.level == 'danger' %} msg-error{% elif attrs.level == 'success' %} msg-success{% endif %}">
+    {% slot message %}
+    {% endslot %}
+</div>

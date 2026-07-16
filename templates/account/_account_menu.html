@@ -1,0 +1,15 @@
+{% comment %} Header account dropdown — included by base.html when authenticated. Native <details> so it needs no JS to open. {% endcomment %}
+<details class="account-menu">
+  <summary aria-label="Account menu">{% include "partials/icon.html" with name="user" %}</summary>
+  <div class="account-menu__panel" role="menu">
+    <a role="menuitem" href="{% url 'accounts:profile' %}">{% include 'partials/icon.html' with name='user' %} Profile</a>
+    <a role="menuitem" href="{% url 'account_change_password' %}">{% include 'partials/icon.html' with name='lock' %} Change password</a>
+    <a role="menuitem" href="{% url 'account_email' %}">{% include 'partials/icon.html' with name='mail' %} Email addresses</a>
+    <a role="menuitem" href="{% url 'accounts:connected_accounts' %}">{% include 'partials/icon.html' with name='link' %} Connected accounts</a>
+    {% if request.user.is_staff %}<a role="menuitem" href="{% url 'admin:index' %}">{% include 'partials/icon.html' with name='shield' %} Admin</a>{% endif %}
+    <hr>
+    <form method="post" action="{% url 'account_logout' %}">{% csrf_token %}
+      <button type="submit">{% include 'partials/icon.html' with name='logout' %} Sign out</button>
+    </form>
+  </div>
+</details>

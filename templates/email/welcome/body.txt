@@ -1,0 +1,9 @@
+Welcome to {{ product_name }}
+
+Hi{% if email %} {{ email }}{% endif %},
+
+Thanks for joining {{ product_name }}. Share interactive prototypes with a single link and collect annotated, in-context feedback from your reviewers -- all in one place.
+
+Whenever you're ready, upload your first prototype and send it out for review.
+
+-- The ProtoPeek Team

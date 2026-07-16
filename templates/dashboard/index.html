@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard — ProtoPeek{% endblock %}
+
+{% block main %}
+  <h1>Your prototypes</h1>
+  <p class="sub">Upload a self-contained HTML file to get a shareable link.</p>
+
+  {% if user.is_provisional %}
+    <div class="card" style="border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface));">
+      <div class="tag">Free key</div>
+      <h3 style="margin:.35rem 0 .3rem;">Claim this key to keep it</h3>
+      <p class="muted" style="font-size:.9rem;">You signed in with a key — no account needed. Add an email + password
+        to <strong>recover it if you lose it</strong> and get notified when feedback lands.</p>
+      <form method="post" action="{% url 'claim' %}" class="row" style="align-items:flex-end;">
+        {% csrf_token %}
+        <div><label>Email</label><input type="email" name="email" placeholder="you@company.com" required></div>
+        <div><label>Password</label><input type="password" name="password" placeholder="8+ characters" required></div>
+        <div style="flex:0;"><button class="btn btn-sm" type="submit">Claim key</button></div>
+      </form>
+      <p class="meta" style="margin-top:.6rem;">Tip: sign in on any device at
+        <span class="mono">{{ BASE_URL }}/token</span> with this token.</p>
+    </div>
+  {% endif %}
+
+  <div class="card">
+    <h3>Share a new prototype</h3>
+    <form method="post" action="{% url 'dashboard_upload' %}" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label>Name</label>
+          <input type="text" name="name" placeholder="Pricing page v2">
+        </div>
+        <div>
+          <label>HTML file</label>
+          <input type="file" name="html" accept=".html,text/html" required>
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label>Allow domains (comma-separated)</label>
+          <input type="text" name="domains" placeholder="acme.com, partner.com">
+        </div>
+        <div>
+          <label>Allow specific emails</label>
+          <input type="text" name="emails" placeholder="jane@partner.com">
+        </div>
+      </div>
+      <p class="muted" style="font-size:.8rem;margin-top:8px;">
+        A default domain from <span class="mono">PROTOPEEK_DEFAULT_DOMAIN</span> is added automatically if set.
+        Links expire in 30 days.
+      </p>
+      <button class="btn" type="submit">Upload &amp; get link</button>
+    </form>
+  </div>
+
+  {% for p in prototypes %}
+    <div class="card">
+      <div class="proto">
+        <div style="flex:1;">
+          <h3 style="margin-bottom:2px;">
+            {{ p.name }}
+            {% if p.is_viewable %}
+              <span class="pill pill-live">live</span>
+            {% else %}
+              <span class="pill pill-dead">{% if p.is_expired %}expired{% else %}inactive{% endif %}</span>
+            {% endif %}
+          </h3>
+          <div class="meta">
+            v{{ p.current_version.version_number|default:"—" }} ·
+            expires {{ p.expires_at }} ·
+            {{ p.access_rules.count }} rule{{ p.access_rules.count|pluralize }}
+          </div>
+          <div class="copy" style="margin-top:10px;">
+            <code id="url-{{ p.uuid }}">{{ p.share_url }}</code>
+            <button class="btn btn-sm btn-ghost" type="button"
+                    onclick="navigator.clipboard.writeText(document.getElementById('url-{{ p.uuid }}').textContent)">Copy</button>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:12px; align-items:flex-end;">
+        {% if p.is_active %}
+          <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
+            {% csrf_token %}<input type="hidden" name="action" value="deactivate">
+            <button class="btn btn-sm btn-danger" type="submit">Deactivate</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
+            {% csrf_token %}<input type="hidden" name="action" value="reactivate">
+            <button class="btn btn-sm btn-ghost" type="submit">Re-open</button>
+          </form>
+        {% endif %}
+        <a class="btn btn-sm btn-ghost" href="{% url 'prototype_feedback' p.uuid %}" style="flex:0;">Feedback</a>
+        <a class="btn btn-sm btn-ghost" href="{% url 'viewer' p.uuid %}" target="_blank" style="flex:0;">Open viewer ↗</a>
+      </div>
+    </div>
+  {% empty %}
+    <p class="muted">No prototypes yet — upload one above.</p>
+  {% endfor %}
+
+  <h2>Tokens</h2>
+  <p class="sub">Used by <span class="mono">/proto-up</span> &amp; friends via the <span class="mono">Authorization: Bearer</span> header.</p>
+  {% for t in tokens %}
+    <div class="card">
+      <div class="proto">
+        <div style="flex:1;">
+          <strong>{{ t.label|default:"(unlabeled)" }}</strong>
+          {% if t.is_active %}<span class="pill pill-live">active</span>{% else %}<span class="pill pill-dead">revoked</span>{% endif %}
+          <div class="copy" style="margin-top:8px;">
+            <code>{{ t.token }}</code>
+            <button class="btn btn-sm btn-ghost" type="button" onclick="navigator.clipboard.writeText('{{ t.token }}')">Copy</button>
+          </div>
+          <div class="meta">created {{ t.created_at }}{% if t.last_used_at %} · last used {{ t.last_used_at }}{% endif %}</div>
+        </div>
+        {% if t.is_active %}
+          <form method="post" action="{% url 'token_action' %}" class="inline">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="revoke">
+            <input type="hidden" name="token_id" value="{{ t.id }}">
+            <button class="btn btn-sm btn-danger" type="submit">Revoke</button>
+          </form>
+        {% endif %}
+      </div>
+    </div>
+  {% endfor %}
+  <form method="post" action="{% url 'token_action' %}" class="row" style="align-items:flex-end;">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="create">
+    <div><label>New token label</label><input type="text" name="label" placeholder="laptop"></div>
+    <div style="flex:0;"><button class="btn btn-sm" type="submit">Mint token</button></div>
+  </form>
+{% endblock %}

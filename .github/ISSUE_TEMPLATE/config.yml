@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/Brightwing-Systems-LLC/protopeek/blob/main/SECURITY.md
+    about: Please report security issues privately by email — not as a public issue.
+  - name: Questions & support
+    url: mailto:support@brightwingsystems.com
+    about: Questions about using ProtoPeek or protopeek.dev.

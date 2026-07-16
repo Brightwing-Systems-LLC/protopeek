@@ -1,0 +1,83 @@
+name: protopeek
+
+# Production services (BWS starter §10). All join the shared external
+# bws_network alongside bws_postgres / bws_redis / bws_caddy. Every service
+# reads its config from .env.prod (never committed; mode 600 on the server).
+# Static is baked into the image — deliberately NO staticfiles host volume
+# (§10 static-serving invariant).
+
+x-logging: &syslog
+  driver: syslog
+  options:
+    syslog-address: "udp://127.0.0.1:514"
+    tag: "protopeek/{{.Name}}"
+
+x-app: &app
+  build:
+    context: .
+    dockerfile: Dockerfile
+    target: runtime
+  image: protopeek:latest
+  env_file:
+    - .env.prod
+  networks:
+    - bws_network
+  restart: unless-stopped
+  logging: *syslog
+
+services:
+  # One-shot: apply migrations, then refresh static inside the container.
+  migrate:
+    <<: *app
+    restart: "no"
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput --ignore=src"
+
+  web:
+    <<: *app
+    command: >
+      gunicorn config.asgi:application
+      -k uvicorn.workers.UvicornWorker
+      --bind 0.0.0.0:8000
+      --workers 3 --timeout 120 --graceful-timeout 30
+    networks:
+      bws_network:
+        aliases:
+          - protopeek-web
+    healthcheck:
+      test: ["CMD", "curl", "-sf", "http://localhost:8000/api/v1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  celery_worker:
+    <<: *app
+    command: celery -A config worker --concurrency=2 --loglevel=info
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  celery_beat:
+    <<: *app
+    command: >
+      celery -A config beat
+      --scheduler django_celery_beat.schedulers:DatabaseScheduler
+      --loglevel=info
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+networks:
+  bws_network:
+    external: true

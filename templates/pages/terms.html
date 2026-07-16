@@ -1,0 +1,246 @@
+{% extends "pages/_legal_base.html" %}
+{% block title %}Terms of Service — {{ PRODUCT_NAME }}{% endblock %}
+
+{% block legal %}
+  <h1>Terms of Service</h1>
+
+  <p>These Terms of Service ("Terms") govern your use of {{ PRODUCT_NAME }} ("the Service"),
+  operated by <a href="https://brightwingsystems.com" target="_blank" rel="noopener">{{ COMPANY_NAME }}</a>
+  ("we", "us", or "our") and available at protopeek.dev. By accessing or using the Service,
+  you agree to be bound by these Terms. If you do not agree, do not use the Service. If you
+  are using the Service on behalf of an organization, you represent that you have authority
+  to bind that organization to these Terms.</p>
+
+  <h2>1. Eligibility</h2>
+  <p>You must be at least 13 years old to use the Service. If you are between 13 and 18, you
+  confirm you have your parent or legal guardian's permission to use the Service.</p>
+
+  <h2>2. Service Description</h2>
+  <p>{{ PRODUCT_NAME }} hosts self-contained HTML prototypes behind private, time-boxed links,
+  lets invited reviewers pin annotated feedback directly on the page, and returns that feedback
+  to the prototype's owner — including through an API designed to be used by AI coding tools.
+  Access tokens can be minted without creating an account. Users may employ third-party tools,
+  including artificial intelligence services, in the course of creating prototypes shared through
+  the Service. We reserve the right to modify, suspend, or discontinue any part of the Service at
+  any time with reasonable notice. We do not guarantee any specific uptime percentage or level of
+  availability.</p>
+
+  <h2>3. Accounts and Access Tokens</h2>
+  <p>The Service is token-first: minting an access token creates ownership of the prototypes
+  uploaded with it, without an account. You are responsible for keeping your token confidential
+  and for all activity that occurs under it. You may revoke or rotate tokens at any time, and may
+  optionally claim a token with an email address to make it recoverable — an unclaimed token that
+  is lost cannot be recovered, and access to its prototypes is lost with it.</p>
+  <p>Reviewers do not create accounts. A reviewer self-asserts an email address, which is checked
+  against the prototype's allowlist and remembered in a signed cookie. Reviewer attribution is
+  self-asserted and suitable for design review; it is not a strong identity guarantee.</p>
+
+  <h2>4. Acceptable Use</h2>
+  <p>You agree not to:</p>
+  <ul>
+    <li>Use the Service for any unlawful purpose or in violation of any applicable laws or
+      regulations</li>
+    <li>Upload prototypes that contain malware, phishing pages, or other harmful or deceptive
+      content</li>
+    <li>Attempt to gain unauthorized access to any part of the Service, other owners'
+      prototypes, or its related systems</li>
+    <li>Interfere with or disrupt the integrity or performance of the Service</li>
+    <li>Upload or transmit viruses, malware, or other harmful code designed to damage the
+      Service or its infrastructure</li>
+    <li>Use the Service to infringe on the intellectual property rights of others</li>
+    <li>Use prototype links as general-purpose web hosting — the Service is a review tool for
+      unreleased mockups, not a platform for hosting production applications or public
+      websites</li>
+  </ul>
+
+  <h2>5. Sensitive Data</h2>
+  <p>Prototypes are unreleased mockups. You agree not to upload prototypes that contain,
+  collect, store, or process:</p>
+  <ul>
+    <li>Production or customer datasets</li>
+    <li>Social Security numbers or government-issued identification numbers</li>
+    <li>Full payment card numbers (PAN), CVV codes, or banking credentials</li>
+    <li>Protected Health Information (PHI) as defined under HIPAA, unless you have executed a
+      Business Associate Agreement with {{ COMPANY_NAME }}</li>
+    <li>Biometric data without explicit, informed consent and compliance with applicable law</li>
+  </ul>
+
+  <h2>6. API and AI Agent Usage</h2>
+  <p>The Service provides programmatic access through a public HTTP API, designed to be driven
+  by AI coding agents (such as Claude Code, Codex, or Gemini CLI) on your behalf. By using the
+  API — directly or through an agent — you agree to:</p>
+  <ul>
+    <li>Use only the official {{ PRODUCT_NAME }} API endpoints for automated or programmatic
+      access</li>
+    <li>Not exceed reasonable usage limits; we reserve the right to throttle or block requests
+      that constitute abuse or place excessive load on the Service</li>
+    <li>Not scrape, crawl, or use automated means to access the Service outside of the official
+      API</li>
+    <li>Accept that API availability is provided on the same "as is" basis as the rest of the
+      Service</li>
+  </ul>
+
+  <h2>7. Your Content and AI-Generated Content</h2>
+  <p>You retain ownership of all prototypes and content you upload to the Service. By uploading
+  a prototype, you grant us a limited license to host, serve, and display it to you and the
+  reviewers you invite, as necessary to operate the Service. You are solely responsible for the
+  content you upload, including ensuring it does not violate any laws or third-party rights —
+  regardless of what tools produced it, including AI assistants and code generators.</p>
+  <p>Reviewers retain ownership of the feedback they submit. By submitting feedback, a reviewer
+  grants us a license to store it and display it to the prototype's owner and to other invited
+  reviewers of that prototype.</p>
+  <p>We reserve the right to remove any content that violates these Terms or that we determine,
+  in our sole discretion, to be harmful or inappropriate. See our
+  <a href="{% url 'pages:privacy' %}">Privacy Policy</a> for details on data handling.</p>
+
+  <h2>8. Third-Party Tools and Services</h2>
+  <p>If you use any third-party tool or service in connection with creating or uploading a
+  prototype — including AI providers, code generation tools, APIs, or libraries — you agree to
+  comply with that provider's terms of service and usage policies. Violation of a third-party
+  provider's policies while using the Service constitutes a violation of these Terms.</p>
+  <p>{{ PRODUCT_NAME }} and {{ COMPANY_NAME }} are not affiliated with, endorsed by, or
+  sponsored by any third-party tool or service provider, including Anthropic, OpenAI, or
+  Google. References to third-party tools describe compatibility only. We make no
+  representations or warranties regarding the availability, accuracy, reliability, or legality
+  of any third-party tool or service; your use of them is governed entirely by your separate
+  agreements with those providers.</p>
+
+  <h2>9. Responsibility for Shared Prototypes</h2>
+  <p>You are solely responsible for any prototype you upload and share through the Service.
+  {{ COMPANY_NAME }} acts solely as a hosting and infrastructure provider and does not review,
+  endorse, or take responsibility for the content, functionality, or legality of user-uploaded
+  prototypes. This means:</p>
+  <ul>
+    <li>You are the publisher of your prototype and responsible for its compliance with all
+      applicable laws</li>
+    <li>You are responsible for whom you invite to review it, via allowlist domains and email
+      addresses</li>
+    <li>If a prototype contains personal data, you are the data controller for that data under
+      applicable privacy laws, and {{ PRODUCT_NAME }} acts as the data processor on your
+      behalf</li>
+    <li>You are responsible for any harm caused by your prototype to third parties</li>
+  </ul>
+  <p>{{ COMPANY_NAME }} is not a party to any relationship between you and your reviewers.</p>
+
+  <h2>10. Copyright and DMCA</h2>
+  <p>We respect the intellectual property rights of others. If you believe that content hosted
+  on the Service infringes your copyright, you may submit a takedown notice to our designated
+  agent at <a href="mailto:{{ LEGAL_EMAIL }}">{{ LEGAL_EMAIL }}</a> with the following
+  information:</p>
+  <ul>
+    <li>Identification of the copyrighted work you claim has been infringed</li>
+    <li>Identification of the material on the Service that you claim is infringing, with
+      enough detail for us to locate it (e.g., the share link)</li>
+    <li>Your contact information (name, address, email, phone number)</li>
+    <li>A statement that you have a good faith belief that the use is not authorized by the
+      copyright owner, its agent, or the law</li>
+    <li>A statement, under penalty of perjury, that the information in the notice is accurate
+      and that you are the copyright owner or authorized to act on their behalf</li>
+    <li>Your physical or electronic signature</li>
+  </ul>
+  <p>We will respond to valid takedown notices and may remove or disable access to the
+  allegedly infringing content. Repeat infringers may have their access to the Service
+  terminated.</p>
+
+  <h2>11. Prototype Lifecycle and Pricing</h2>
+  <p>The Service is currently free of charge. Every prototype is retained for a flat 30 days
+  from upload, after which its link stops resolving; owners may deactivate a link earlier at
+  any time. Features and pricing are subject to change with reasonable notice.</p>
+
+  <h2>12. Intellectual Property</h2>
+  <p>The Service, including its design, code, and branding, is owned by {{ COMPANY_NAME }} and
+  protected by applicable intellectual property laws, except to the extent components are made
+  available under an open-source license.</p>
+
+  <h2>13. Disclaimer of Warranties</h2>
+  <p>THE SERVICE IS PROVIDED "AS IS" AND "AS AVAILABLE" WITHOUT WARRANTIES OF ANY KIND, WHETHER
+  EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE
+  WILL BE UNINTERRUPTED, ERROR-FREE, OR COMPLETELY SECURE. WE MAKE NO REPRESENTATIONS OR
+  WARRANTIES REGARDING THE ACCURACY, RELIABILITY, OR COMPLETENESS OF ANY CONTENT UPLOADED BY
+  USERS, INCLUDING AI-GENERATED CONTENT.</p>
+  <p>No advice or information, whether oral or written, obtained from {{ COMPANY_NAME }} or
+  through the Service shall create any warranty not expressly stated in these Terms.</p>
+
+  <h2>14. Limitation of Liability</h2>
+  <p>TO THE MAXIMUM EXTENT PERMITTED BY LAW, {{ COMPANY_NAME|upper }} SHALL NOT BE LIABLE FOR
+  ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF
+  PROFITS, REVENUE, DATA, GOODWILL, OR BUSINESS OPPORTUNITIES, ARISING OUT OF OR RELATED TO
+  YOUR USE OF THE SERVICE. THIS INCLUDES DAMAGES RESULTING FROM: UNAUTHORIZED ACCESS TO OR
+  ALTERATION OF YOUR DATA; CONDUCT OF THIRD PARTIES, INCLUDING OTHER USERS AND REVIEWERS; AND
+  ANY PROTOTYPE CONTENT, WHETHER GENERATED BY AI OR OTHER MEANS.</p>
+  <p>TO THE EXTENT {{ COMPANY_NAME|upper }} HAS ANY LIABILITY THAT CANNOT BE EXCLUDED, OUR
+  TOTAL CUMULATIVE LIABILITY FOR ALL CLAIMS ARISING OUT OF OR RELATING TO THESE TERMS SHALL NOT
+  EXCEED THE GREATER OF: (A) THE AMOUNT YOU PAID US IN THE TWELVE (12) MONTHS PRECEDING THE
+  CLAIM, OR (B) USD $10.00.</p>
+  <p>You acknowledge that the limitations and exclusions in this section are an essential
+  element of the basis of the bargain between you and {{ COMPANY_NAME }}, and that
+  {{ COMPANY_NAME }} would not provide the Service without them.</p>
+
+  <h2>15. Indemnification</h2>
+  <p>You agree to indemnify, defend, and hold harmless {{ COMPANY_NAME }} and its officers,
+  directors, employees, agents, affiliates, successors, and assigns from and against any and
+  all claims, liabilities, damages, losses, costs, and expenses (including reasonable
+  attorneys' fees) arising out of or relating to:</p>
+  <ul>
+    <li>Your use of the Service or violation of these Terms</li>
+    <li>Any prototype you upload or share through the Service</li>
+    <li>Your violation of any third party's rights, including privacy, intellectual property,
+      or contractual rights</li>
+    <li>Your violation of any applicable privacy law, data protection regulation, or consumer
+      protection law</li>
+    <li>Your violation of any third-party tool or service provider's terms of service or usage
+      policies</li>
+  </ul>
+
+  <h2>16. Termination</h2>
+  <p>We may suspend or terminate your access to the Service, or remove any uploaded prototype,
+  at any time for violation of these Terms or for any other reason with reasonable notice. You
+  may stop using the Service at any time; contact us to have your tokens and data removed. Upon
+  termination, your right to use the Service ceases immediately, and we may delete your data in
+  accordance with our <a href="{% url 'pages:privacy' %}">Privacy Policy</a>.
+  {{ COMPANY_NAME }} shall not be liable to you or any third party for any suspension,
+  termination, or removal action taken in good faith pursuant to these Terms.</p>
+
+  <h2>17. Governing Law and Dispute Resolution</h2>
+  <p>These Terms are governed by and construed in accordance with the laws of the State of
+  North Carolina, United States, without regard to its conflict of law provisions.</p>
+  <p>Any dispute arising out of or relating to these Terms shall first be subject to good-faith
+  negotiation. If unresolved within 30 days, disputes shall be submitted to binding arbitration
+  administered by the American Arbitration Association (AAA) under its Commercial Arbitration
+  Rules. Arbitration shall take place in North Carolina. Judgment on the award may be entered
+  in any court of competent jurisdiction.</p>
+  <p>YOU AGREE THAT ANY DISPUTE RESOLUTION PROCEEDINGS WILL BE CONDUCTED ONLY ON AN INDIVIDUAL
+  BASIS AND NOT IN A CLASS, CONSOLIDATED, OR REPRESENTATIVE ACTION. TO THE EXTENT PERMITTED BY
+  LAW, YOU WAIVE YOUR RIGHT TO A JURY TRIAL IN ANY LEGAL PROCEEDING ARISING OUT OF OR RELATING
+  TO THESE TERMS.</p>
+
+  <h2>18. Children</h2>
+  <p>The Service is intended for users aged 13 and older. You may not use {{ PRODUCT_NAME }} to
+  share prototypes directed at children under 13. We do not knowingly collect personal
+  information from children under 13.</p>
+
+  <h2>19. Data Processing</h2>
+  <p>{{ PRODUCT_NAME }} processes personal data to provide the Service. Our legal basis for
+  processing is contract performance (GDPR Art. 6(1)(b)) — the data is necessary to host
+  prototypes, gate access, and deliver reviewer feedback. Owners can deactivate prototypes or
+  let links expire at any time; deletion of stored data can be requested at
+  <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a>. We use Postmark (transactional
+  email) as a data processor. See the <a href="{% url 'pages:privacy' %}">Privacy Policy</a>
+  for details.</p>
+
+  <h2>20. Changes to These Terms</h2>
+  <p>We may update these Terms from time to time. We will notify you of material changes by
+  posting the updated Terms on this page and updating the "Last updated" date. Your continued
+  use of the Service after changes constitutes acceptance of the revised Terms.</p>
+
+  <h2>21. Severability</h2>
+  <p>If any provision of these Terms is found to be unenforceable, the remaining provisions
+  will continue in full force and effect. These Terms, together with the
+  <a href="{% url 'pages:privacy' %}">Privacy Policy</a>, constitute the entire agreement
+  between you and {{ COMPANY_NAME }} regarding the Service.</p>
+
+  <h2>22. Contact Us</h2>
+  <p>If you have questions about these Terms, contact us at
+  <a href="mailto:{{ LEGAL_EMAIL }}">{{ LEGAL_EMAIL }}</a>.</p>
+{% endblock %}

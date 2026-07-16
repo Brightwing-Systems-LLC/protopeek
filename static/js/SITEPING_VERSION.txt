@@ -1,0 +1,10 @@
+@siteping/widget 0.9.15  (MIT — NeosiaNexus/SitePing)
+Vendored file: siteping.global.js  (dist/index.global.js, IIFE global build)
+Exposes: window.SitePing.initSiteping(config)
+Self-contained: no dynamic imports / no split chunks.
+
+NOTE: the trailing `//# sourceMappingURL=index.global.js.map` COMMENT was removed
+(the .map is not vendored) so WhiteNoise's manifest post-processing doesn't fail.
+Strip only the comment substring — NOT the whole line: the sourcemap comment shares
+its line with `exports.initSiteping=Wf;return exports;})({})`, so a line-delete breaks
+the bundle (unterminated license comment, no initSiteping export).

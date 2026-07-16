@@ -1,0 +1,22 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block code %}Error{% endblock %} — ProtoPeek</title>
+  <script>(function(){var p=localStorage.getItem("protopeek-theme")||"system";
+    var sys=matchMedia("(prefers-color-scheme: light)").matches?"light":"dark";
+    document.documentElement.dataset.theme=p==="system"?sys:p;})();</script>
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+</head>
+<body>
+  <main class="center-narrow" style="text-align:center;">
+    <div class="card">
+      <h1 style="font-size:3rem;margin-bottom:0;">{% block big %}{% endblock %}</h1>
+      <p class="muted">{% block message %}Something went wrong.{% endblock %}</p>
+      <p style="margin-top:1rem;"><a class="btn btn-ghost btn-sm" href="/">← Home</a></p>
+    </div>
+  </main>
+</body>
+</html>

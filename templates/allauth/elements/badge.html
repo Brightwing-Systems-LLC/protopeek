@@ -1,0 +1,5 @@
+{% load allauth %}
+<span class="pill"{% if attrs.title %} title="{{ attrs.title }}"{% endif %}>
+    {% slot %}
+    {% endslot %}
+</span>

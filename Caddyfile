@@ -1,0 +1,33 @@
+# Caddy reverse proxy for protopeek (BWS starter §11).
+# $DOMAIN and $ACME_EMAIL come from the server environment.
+
+http://{$DOMAIN}, http://www.{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
+
+https://www.{$DOMAIN} {
+    redir https://{$DOMAIN}{uri} permanent
+}
+
+https://{$DOMAIN} {
+    tls {$ACME_EMAIL}
+    encode zstd gzip
+
+    reverse_proxy protopeek-web:8000 {
+        header_up X-Forwarded-Proto https
+        header_up Host {host}
+
+        # Health-check resilience is mandatory: a bare active check marks the
+        # upstream down on a single failed probe, and Caddy re-resolves the
+        # container via Docker DNS every probe (which blips during any deploy
+        # recreate) -> all-requests-503 windows. Require 3 consecutive fails
+        # (~30s) and retry a failed dial for 5s so a blip is transparent.
+        health_uri /api/v1/health
+        health_interval 10s
+        health_timeout 3s
+        health_passes 1
+        health_fails 3
+        lb_try_duration 5s
+        lb_try_interval 250ms
+    }
+}

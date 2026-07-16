@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ PRODUCT_NAME }} — share prototypes, collect annotated feedback{% endblock %}
+
+{% block main %}
+  <section class="hero">
+    <div class="hero__lead">
+      <div class="tag">AI prototype review</div>
+      <h1>Share an AI prototype. Get feedback.</h1>
+      <p class="sub muted">
+        Host a self-contained HTML prototype behind an unguessable, time-boxed link and a
+        lightweight email allowlist. Reviewers pin comments right on the page — no signup.
+        You (and Claude Code) pull a structured synthesis and iterate.
+      </p>
+      <p class="muted mono" style="font-size:.8rem;letter-spacing:.02em;">
+        <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">Open source</a>
+        · private by design · links expire in 30 days · no signup
+      </p>
+    </div>
+
+    <div class="card hero__card" style="border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface));">
+      <div class="tag">Install · one line in your terminal</div>
+      <h3 style="margin:.35rem 0 .5rem;">Add the skills to your coding agent:</h3>
+      <div class="copy" style="font-size:.95rem;">
+        <code id="install-cmd">npx skills@latest add Brightwing-Systems-LLC/protopeek</code>
+        <button class="btn btn-sm" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('install-cmd').textContent); this.textContent='Copied ✓'; setTimeout(()=>this.textContent='Copy',1200)">Copy</button>
+      </div>
+      <p class="muted" style="margin:.7rem 0 0;">
+        Installs four inspectable skills — <span class="mono">/proto-up</span>,
+        <span class="mono">/proto-status</span>, <span class="mono">/proto-feedback</span>,
+        <span class="mono">/proto-list</span> — straight from the
+        <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">open-source repo</a>
+        into Claude Code, Codex, Cursor, or any Agent-Skills-compatible tool.
+        <strong>No signup, no password</strong> — the first <span class="mono">/proto-up</span>
+        mints an anonymous token after asking you.
+      </p>
+      <p class="muted" style="margin:.7rem 0 0;font-size:.85rem;">
+        Claude Code plugin instead: <span class="mono">claude plugin marketplace add
+        Brightwing-Systems-LLC/protopeek</span> → <span class="mono">claude plugin install
+        protopeek@protopeek</span>. Prefer manual? Your agent can follow
+        <a href="{% url 'pages:agent' %}"><span class="mono">{{ BASE_URL }}/agent.md</span></a>
+        — it asks before every consequential step.
+      </p>
+    </div>
+  </section>
+
+  <div class="row feature-row">
+    <div class="card"><h3>◉ Gated by design</h3><p class="muted">UUID link + email allowlist + signed identity. A leaked link self-expires.</p></div>
+    <div class="card"><h3>⌖ Pin-anchored notes</h3><p class="muted">Reviewers annotate elements directly. Author stamped server-side.</p></div>
+    <div class="card"><h3>↻ Agent-shaped</h3><p class="muted">Pull a synthesis — themes, conflicts, a change list — not a comment dump.</p></div>
+  </div>
+
+  {% comment %} ── The whole loop, from a real run ──────────────────────────── {% endcomment %}
+  <section class="walk">
+    <div class="walk-head">
+      <div class="tag">The whole loop</div>
+      <h2 style="font-size:1.8rem;margin:.4rem 0;">From prototype to synthesized feedback</h2>
+      <p class="muted">A real run: a <em>Tempo</em> fitness dashboard, reviewed by three people, pulled back and synthesized by the agent.</p>
+    </div>
+
+    <figure class="shot walk-hero">
+      <img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the goal ring to leave an element-anchored comment">
+      <figcaption>Reviewers pin comments right on the page — every note anchored to its element and stamped to its author.</figcaption>
+    </figure>
+
+    <div class="step">
+      <div class="step__body">
+        <div class="stepno">01</div><h3>Install — one line, no signup</h3>
+        <p class="muted">One command in your terminal installs the four skills from the open-source repo. Nothing else to configure — the first <span class="mono">/proto-up</span> mints an anonymous token (no account, no password) after asking you.</p>
+      </div>
+      <div class="step__media">
+        <div class="term"><div class="cmd">npx skills@latest add Brightwing-Systems-LLC/protopeek</div><div class="out"><span class="ok">✓</span> proto-up · proto-status · proto-feedback · proto-list
+<span class="ok">✓</span> installed for Claude Code (works in Codex &amp; Cursor too)
+Ready — try /proto-up ./prototype.html in your agent</div></div>
+      </div>
+    </div>
+
+    <div class="step reverse">
+      <div class="step__body">
+        <div class="stepno">02</div><h3>Upload a prototype</h3>
+        <p class="muted">Generate a self-contained HTML file, then one command uploads it and returns a private, time-boxed link.</p>
+        <div class="term"><div class="cmd">/proto-up ./tempo.html --allow example.com</div><div class="out">{ "url": "{{ BASE_URL }}/p/d2a6…39b8",
+  "version": 1, "expires_at": "…+30d" }</div></div>
+      </div>
+      <div class="step__media">
+        <figure class="shot"><img src="{% static 'img/walkthrough/01-prototype.jpg' %}" alt="The Tempo weekly fitness-dashboard prototype">
+          <figcaption>The self-contained prototype you upload.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step__body">
+        <div class="stepno">03</div><h3>Reviewers see it &amp; pin comments</h3>
+        <p class="muted">Send the link. Reviewers enter an email once — no signup, no password — and draw a box on anything to leave a comment. It anchors to that element.</p>
+      </div>
+      <div class="step__media">
+        <figure class="shot"><img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the goal ring to leave a comment">
+          <figcaption>Pinning a comment on the goal ring.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="step reverse">
+      <div class="step__body">
+        <div class="stepno">04</div><h3>Pull the feedback</h3>
+        <p class="muted">When comments land, your agent pulls an agent-shaped payload — every note with its type, author, and the element it targets.</p>
+        <div class="term"><div class="cmd">/proto-feedback {{ BASE_URL }}/p/d2a6…39b8</div><div class="out">3 reviewers · 4 comments · 4 new
+[change]   sam    @ #stats  "4 stat tiles compete with the ring…"
+[other]    jordan @ #ring   "Disagree with Sam — keep the stats…"
+[change]   taylor @ #cta    "'Start workout' is tiny, top-right…"</div></div>
+      </div>
+      <div class="step__media">
+        <figure class="shot"><img src="{% static 'img/walkthrough/04-panel.jpg' %}" alt="The collected feedback panel showing all comments">
+          <figcaption>Everything reviewers left, in one place.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step__body">
+        <div class="stepno">05</div><h3>Discuss &amp; iterate with your agent</h3>
+        <p class="muted">Your agent doesn't dump comments — it synthesizes: themes, who-said-what, conflicts, and a concrete change list mapped to the page. You decide; it edits and re-shares as v2.</p>
+      </div>
+      <div class="step__media">
+        <div class="chat">
+          <div class="chat__who">your agent · synthesis</div>
+          <p><strong>3 reviewers, 4 notes on v1.</strong> The core tension is <strong>visual hierarchy</strong> — what's the hero?</p>
+          <p>Sam wants the four stat tiles demoted because they compete with the 72% ring; Jordan pushes back that the stats are <em>why they open the app</em> and would rather shrink the ring. That's a real product question: is Tempo a <strong>glanceable goal</strong> or a <strong>data view</strong>? Pick one primary metric. Taylor flags two fixes below it.</p>
+          <p><strong>Proposed v2:</strong></p>
+          <ul>
+            <li>Commit to one hero — promote the ring <em>or</em> the stats; demote the other to a secondary row</li>
+            <li>Make <em>"Start workout"</em> the big primary CTA — high-contrast, thumb-reachable</li>
+            <li>Label the daily chart (<em>"active minutes"</em>) + add a baseline axis</li>
+          </ul>
+          <p class="muted">Want me to make these edits and re-share as v2?</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="text-align:center;margin-top:2.5rem;">
+      <div class="copy" style="display:inline-flex;">
+        <code id="install-cmd2">npx skills@latest add Brightwing-Systems-LLC/protopeek</code>
+        <button class="btn btn-sm" type="button"
+                onclick="navigator.clipboard.writeText(document.getElementById('install-cmd2').textContent); this.textContent='Copied ✓'; setTimeout(()=>this.textContent='Copy',1200)">Copy</button>
+      </div>
+      <p class="muted" style="margin-top:.6rem;">
+        One line in your terminal, then run the loop from your agent.
+        <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">Read the source</a>
+        or <a href="{% url 'pages:agent' %}">the agent setup page</a> first if you like.
+      </p>
+    </div>
+  </section>
+{% endblock %}

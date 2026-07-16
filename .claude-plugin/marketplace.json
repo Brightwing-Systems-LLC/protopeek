@@ -1,0 +1,24 @@
+{
+  "name": "protopeek",
+  "owner": {
+    "name": "Brightwing Systems, LLC",
+    "url": "https://brightwingsystems.com"
+  },
+  "metadata": {
+    "description": "ProtoPeek — share HTML prototypes for annotated review, pull the feedback back into your agent.",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "protopeek",
+      "source": "./",
+      "description": "The /proto-up, /proto-status, /proto-feedback, /proto-list skills for the ProtoPeek review loop (protopeek.dev).",
+      "author": {
+        "name": "Brightwing Systems, LLC"
+      },
+      "homepage": "https://protopeek.dev",
+      "license": "MIT",
+      "category": "productivity"
+    }
+  ]
+}
