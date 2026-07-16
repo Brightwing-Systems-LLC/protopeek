@@ -192,3 +192,51 @@ def test_list_activity_hints_and_watermark(prototype, device_token):
     row = api.get("/api/prototypes", **_auth(device_token)).json()[0]
     assert row["total_comments"] == 1
     assert row["has_new"] is False
+
+
+# ── Explicit allowlists (no magic) ───────────────────────────────────────────
+def test_upload_returns_effective_rules(owner, device_token):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    resp = Client().post(
+        "/api/prototypes",
+        {
+            "html": SimpleUploadedFile(
+                "p.html", PROTO_HTML.encode(), content_type="text/html"
+            ),
+            "name": "P",
+            "domains": "acme.com",
+            "emails": "jane@partner.com",
+        },
+        **_auth(device_token),
+    )
+    assert resp.status_code == 200
+    rules = resp.json()["rules"]
+    assert {"kind": "domain", "value": "acme.com"} in rules
+    assert {"kind": "email", "value": "jane@partner.com"} in rules
+    assert len(rules) == 2  # exactly what was sent — nothing seeded
+
+
+def test_dashboard_prefills_default_domain_without_seeding(owner):
+    owner.default_allow_domain = "work.com"
+    owner.save(update_fields=["default_allow_domain"])
+    c = Client()
+    c.force_login(owner)
+
+    # visible prefill in the form…
+    body = c.get(reverse("dashboard")).content.decode()
+    assert 'name="domains" value="work.com"' in body
+
+    # …but a cleared field means what it says: zero rules, locked
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    c.post(
+        reverse("dashboard_upload"),
+        {
+            "html": SimpleUploadedFile(
+                "p.html", PROTO_HTML.encode(), content_type="text/html"
+            )
+        },
+    )
+    p = Prototype.objects.get()
+    assert p.access_rules.count() == 0

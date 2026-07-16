@@ -1,6 +1,6 @@
 ---
 description: Upload a self-contained HTML prototype to ProtoPeek and print the shareable URL. Re-running on the same file publishes a new version behind the same link.
-argument-hint: <path-to-html> [--name "..."] [--allow domain-or-email] [--new] [--update <url-or-uuid>]
+argument-hint: <path-to-html> [--name "..."] [--allow domain-or-email] [--private] [--new] [--update <url-or-uuid>]
 allowed-tools: Bash
 ---
 
@@ -13,8 +13,8 @@ Arguments: `$ARGUMENTS`
 - Optional flags:
   - `--name "..."` — display name (defaults to the file name).
   - `--allow <domain-or-email>` — add an allowlist rule (repeatable; comma-separate values).
-    Optional: if omitted, your key's default reviewer domain (`PROTOPEEK_DEFAULT_DOMAIN`,
-    set at setup) is applied automatically by the server.
+  - `--private` — don't apply your default reviewer domain. Alone: a locked share (nobody
+    can view until rules are added). With `--allow`: exactly those rules and nothing else.
   - `--new` — force a FRESH link even if this file was shared before.
   - `--update <url-or-uuid>` — explicitly target an existing link (overrides the log lookup).
 
@@ -27,8 +27,13 @@ Steps:
    CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
    [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
    ```
-2. Parse the path and flags from `$ARGUMENTS`. Split `--allow` values into `domains`
-   (no `@`) and `emails` (contains `@`), joined comma-separated.
+2. **Build the allowlist — explicit, no server magic.** The server applies exactly the rules in
+   the request; nothing is added behind your back. Split `--allow` values into `domains` (no `@`)
+   and `emails` (contains `@`), joined comma-separated. Unless `--private` was given, include
+   `$PROTOPEEK_DEFAULT_DOMAIN` in `domains` (your configured default — see `/proto-config`).
+   Tell the user what the allowlist will be, e.g.
+   "Allowlist: anyone @copient.ai (your default) + jane@partner.com". If it ends up EMPTY, warn:
+   the link will be locked — nobody can view until rules are added.
 3. **First share of this file?** Say in one line where it's going — stored on protopeek.dev behind
    a private link + email allowlist for a flat 30 days — and get an OK. If it visibly contains real
    personal data (names, emails, records), offer placeholders first. Skip the re-ask on an update
@@ -52,9 +57,11 @@ Steps:
      -F "emails=<emails>" \
      -F "update_of=<uuid-if-any>"
    ```
-6. Parse the JSON response (`uuid`, `url`, `version`, `expires_at`) and print, clearly:
+6. Parse the JSON response (`uuid`, `url`, `version`, `expires_at`, `rules`) and print, clearly:
    - the **shareable URL** (`url`),
-   - the version number and the expiry (a flat **30 days** from upload).
+   - the version number and the expiry (a flat **30 days** from upload),
+   - **who can view** — the effective allowlist from `rules` (e.g. "anyone @copient.ai,
+     jane@partner.com"); if `rules` is empty, flag it: **locked — nobody can view yet**.
 7. **Record it** in `$CFG/prototypes.json` (atomic write — temp file + rename): a record keyed by
    `uuid` with `url`, `name`, `source_path`, `source_basename`, `project_dir` (the cwd/repo),
    `created_at`, `expires_at`, `version`, and the `content_sha256` of the uploaded file. On an

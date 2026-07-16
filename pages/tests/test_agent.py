@@ -25,16 +25,17 @@ def test_agent_md_is_token_first_and_cross_agent(client):
     assert "~/.config/protopeek/" in body
     # retention is stated as a flat 30 days
     assert "30 days" in body
-    # all five commands embedded
+    # all six commands embedded
     for cmd in [
         "proto-up",
         "proto-status",
         "proto-feedback",
         "proto-list",
         "proto-delete",
+        "proto-config",
     ]:
         assert cmd in body
-    assert body.count("````md") == 5
+    assert body.count("````md") == 6
 
 
 @pytest.mark.django_db

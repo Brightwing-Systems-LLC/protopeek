@@ -20,17 +20,20 @@ router = Router()
 
 
 # ── Schemas ──────────────────────────────────────────────────────────────────
+class RuleOut(Schema):
+    kind: str
+    value: str
+
+
 class UploadOut(Schema):
     uuid: str
     name: str
     url: str
     version: int
     expires_at: datetime
-
-
-class RuleOut(Schema):
-    kind: str
-    value: str
+    # The effective allowlist — exactly what the request created, so clients can
+    # show the user who can view without a second call. Empty means locked.
+    rules: list[RuleOut] = []
 
 
 class PrototypeOut(Schema):
@@ -67,13 +70,10 @@ def _split(raw: str) -> list[str]:
     return [p.strip() for p in (raw or "").replace("\n", ",").split(",") if p.strip()]
 
 
-def _seed_rules(prototype: Prototype, domains, emails):
-    from siteconfig import conf
-
-    # Seed the platform default domain + this owner's default domain (set at mint
-    # time from their email), so the common "anyone at my company" case is zero-arg.
-    seeds = [conf.get_str("DEFAULT_ALLOW_DOMAIN"), prototype.owner.default_allow_domain]
-    domains = [*(s for s in seeds if s), *domains]
+def _apply_rules(prototype: Prototype, domains, emails):
+    # Exactly what the request asked for — no server-side defaults. Clients (the
+    # skills, the dashboard prefill) apply the owner's default domain explicitly
+    # and visibly; an empty allowlist is a deliberate, fail-closed state.
     for d in {normalize_email(x).lstrip("@") for x in domains if x}:
         AccessRule.objects.get_or_create(
             prototype=prototype, kind=AccessRule.DOMAIN, value=d
@@ -160,7 +160,7 @@ def upload_prototype(
     else:
         prototype = Prototype(owner=owner, name=name or html.name or "Untitled prototype")
         prototype.save()
-        _seed_rules(prototype, _split(domains), _split(emails))
+        _apply_rules(prototype, _split(domains), _split(emails))
         next_number = 1
 
     version = PrototypeVersion.objects.create(
@@ -175,6 +175,9 @@ def upload_prototype(
         "url": prototype.share_url,
         "version": version.version_number,
         "expires_at": prototype.expires_at,
+        "rules": [
+            {"kind": r.kind, "value": r.value} for r in prototype.access_rules.all()
+        ],
     }
 
 
@@ -202,7 +205,7 @@ def get_prototype(request, uuid: str):
 @router.post("/{uuid}/access", response=PrototypeOut)
 def edit_access(request, uuid: str, payload: AccessIn):
     p = get_object_or_404(Prototype, uuid=uuid, owner=request.auth)
-    _seed_rules_no_default(p, payload.add_domains, payload.add_emails)
+    _apply_rules(p, payload.add_domains, payload.add_emails)
     for d in payload.remove_domains:
         AccessRule.objects.filter(
             prototype=p, kind=AccessRule.DOMAIN, value=normalize_email(d).lstrip("@")
@@ -379,12 +382,3 @@ def annotation_shot(request, uuid: str, ann_id: int):
     )
 
 
-def _seed_rules_no_default(prototype: Prototype, domains, emails):
-    for d in {normalize_email(x).lstrip("@") for x in domains if x}:
-        AccessRule.objects.get_or_create(
-            prototype=prototype, kind=AccessRule.DOMAIN, value=d
-        )
-    for e in {normalize_email(x) for x in emails if x}:
-        AccessRule.objects.get_or_create(
-            prototype=prototype, kind=AccessRule.EMAIL, value=e
-        )

@@ -25,7 +25,7 @@ you                      reviewers                  you (again)
 - [Quick start (hosted)](#quick-start-hosted)
 - [The loop, in practice](#the-loop-in-practice)
 - [How access control works](#how-access-control-works)
-- [The five skills](#the-five-skills)
+- [The six skills](#the-six-skills)
 - [API reference](#api-reference)
 - [Privacy & security](#privacy--security)
 - [Self-hosting](#self-hosting)
@@ -139,15 +139,23 @@ Anyone with the link *and* an allowlisted email address's cooperation can view. 
 self-expire after a flat 30 days, and owners can deactivate — or permanently delete —
 one at any time.
 
-## The five skills
+## The six skills
 
 | Skill | What it does | Side effects |
 |---|---|---|
-| `/proto-up <file> [--name] [--allow] [--new] [--update]` | Upload a prototype; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run) and before the first upload of a file |
+| `/proto-up <file> [--name] [--allow] [--private] [--new] [--update]` | Upload a prototype and state who can view it; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run) and before the first upload of a file |
 | `/proto-status <ref>` | Activity counts: reviewers, comments, **new since last pull** | None — read-only, safe to repeat |
 | `/proto-feedback <ref>` | Pulls annotations + threads + screenshots, synthesizes themes/conflicts/changes | Advances the new-since watermark |
 | `/proto-list` | Every prototype your token owns, with live/expired status, new-feedback hints, and links | Reconciles the local prototype log |
 | `/proto-delete <ref>` | Permanently deletes one — link, every version, all feedback | Irreversible; always confirms first (offers reversible deactivation instead) |
+| `/proto-config [set-default <domain>]` | Shows your setup — token status, default reviewer domain, prototype log — or changes the default | Writes only the local config file |
+
+**No allowlist magic.** The server creates exactly the rules an upload sends — nothing is
+added behind your back. Your default reviewer domain lives in one visible place
+(`~/.config/protopeek/config`); `/proto-up` includes it explicitly and *tells you* every
+time ("Allowlist: anyone @acme.com — your default"), `--allow` adds people, `--private`
+skips the default, and an empty allowlist means a locked link (fail-closed) with a loud
+warning.
 
 The skills are plain instructions over `curl` — no SDK, no daemon. Read them in
 [`skills/`](skills/) before installing, or vendor and edit them; they're MIT like
@@ -172,7 +180,7 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 |---|---|---|
 | `POST` | `/api/tokens` | mint an anonymous owner token (rate-limited; no auth) |
 | `GET` | `/api/me` | token status + owner summary |
-| `POST` | `/api/prototypes` | multipart upload — `html` file + `name`, `domains`, `emails`, optional `update_of=<uuid>` → `{uuid, url, version, expires_at}` |
+| `POST` | `/api/prototypes` | multipart upload — `html` file + `name`, `domains`, `emails`, optional `update_of=<uuid>` → `{uuid, url, version, expires_at, rules}`. The allowlist is exactly `domains`/`emails` — no server-side defaults; `rules` in the response is the effective list |
 | `GET` | `/api/prototypes` | list your prototypes (+ allowlist rules, `total_comments` / `has_new` activity hints) |
 | `GET` | `/api/prototypes/{uuid}` | one prototype |
 | `PATCH` | `/api/prototypes/{uuid}` | `{"name": …, "is_active": …}` — rename, deactivate, or reactivate (reactivating an expired link restarts the 30-day clock) |

@@ -13,7 +13,9 @@ HTML = b"<!doctype html><html><body><h1>Hi</h1></body></html>"
 
 
 def _mint(client, **body):
-    return client.post("/api/tokens", data=json.dumps(body), content_type="application/json")
+    return client.post(
+        "/api/tokens", data=json.dumps(body), content_type="application/json"
+    )
 
 
 def _auth(token):
@@ -40,17 +42,21 @@ def test_me_reports_provisional_status(db, client):
     assert "max_active_prototypes" not in data  # cap removed — flat 30d, no tiers
 
 
-def test_upload_auto_seeds_owner_default_domain(db, client):
+def test_upload_never_seeds_owner_default_domain(db, client):
+    """Request-is-truth: the mint-time default domain is a CLIENT convenience —
+    the server creates exactly the rules the upload sends, nothing implicit."""
     token = _mint(client, default_domain="acme.com").json()["token"]
-    # no --allow / domains passed; server seeds the owner's default
     resp = client.post(
         "/api/prototypes",
-        {"html": SimpleUploadedFile("p.html", HTML, content_type="text/html"), "name": "P"},
+        {
+            "html": SimpleUploadedFile("p.html", HTML, content_type="text/html"),
+            "name": "P",
+        },
         **_auth(token),
     )
     assert resp.status_code == 200
-    rules = client.get("/api/prototypes", **_auth(token)).json()[0]["rules"]
-    assert {"kind": "domain", "value": "acme.com"} in rules
+    assert resp.json()["rules"] == []  # locked until rules are added, and it says so
+    assert client.get("/api/prototypes", **_auth(token)).json()[0]["rules"] == []
 
 
 def test_no_active_cap_on_uploads(db, client):
@@ -60,7 +66,10 @@ def test_no_active_cap_on_uploads(db, client):
     def up(name):
         return client.post(
             "/api/prototypes",
-            {"html": SimpleUploadedFile("p.html", HTML, content_type="text/html"), "name": name},
+            {
+                "html": SimpleUploadedFile("p.html", HTML, content_type="text/html"),
+                "name": name,
+            },
             **_auth(token),
         )
 
@@ -98,7 +107,9 @@ def test_sign_in_with_token(db, client):
 def test_claim_upgrades_provisional_owner(db, client):
     token = _mint(client).json()["token"]
     client.post(reverse("token_signin"), {"token": token})
-    resp = client.post(reverse("claim"), {"email": "me@work.com", "password": "supersecret1"})
+    resp = client.post(
+        reverse("claim"), {"email": "me@work.com", "password": "supersecret1"}
+    )
     assert resp.status_code == 302
     owner = DeviceToken.objects.get(token=token).owner
     owner.refresh_from_db()

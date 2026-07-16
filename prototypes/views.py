@@ -40,6 +40,9 @@ def dashboard(request):
         {
             "prototypes": prototypes,
             "tokens": tokens,
+            # Visible prefill only — the upload applies exactly what's in the form.
+            "default_domain": request.user.default_allow_domain
+            or conf.get_str("DEFAULT_ALLOW_DOMAIN"),
         },
     )
 
@@ -61,11 +64,6 @@ def dashboard_upload(request):
     prototype = Prototype(owner=request.user, name=name)
     prototype.save()
 
-    default_domain = conf.get_str("DEFAULT_ALLOW_DOMAIN")
-    if default_domain:
-        AccessRule.objects.get_or_create(
-            prototype=prototype, kind=AccessRule.DOMAIN, value=default_domain
-        )
     for raw in (request.POST.get("domains") or "").replace("\n", ",").split(","):
         if raw.strip():
             AccessRule.objects.get_or_create(

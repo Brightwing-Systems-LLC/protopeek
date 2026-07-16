@@ -40,7 +40,7 @@
       <div class="row">
         <div>
           <label>Allow domains (comma-separated)</label>
-          <input type="text" name="domains" placeholder="acme.com, partner.com">
+          <input type="text" name="domains" value="{{ default_domain }}" placeholder="acme.com, partner.com">
         </div>
         <div>
           <label>Allow specific emails</label>
@@ -48,8 +48,8 @@
         </div>
       </div>
       <p class="muted" style="font-size:.8rem;margin-top:8px;">
-        A default domain from <span class="mono">PROTOPEEK_DEFAULT_DOMAIN</span> is added automatically if set.
-        Links expire in 30 days.
+        Exactly these rules apply — nothing is added automatically. Clear both fields and
+        nobody can view until you add reviewers. Links expire in 30 days.
       </p>
       <button class="btn" type="submit">Upload &amp; get link</button>
     </form>

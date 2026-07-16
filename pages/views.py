@@ -4,7 +4,14 @@ from django.shortcuts import redirect, render
 
 # Slash commands installed into a consumer's project, read verbatim from the repo
 # so /agent.md always serves what's actually shipped.
-_COMMANDS = ["proto-up", "proto-status", "proto-feedback", "proto-list", "proto-delete"]
+_COMMANDS = [
+    "proto-up",
+    "proto-status",
+    "proto-feedback",
+    "proto-list",
+    "proto-delete",
+    "proto-config",
+]
 
 # The shared, cross-tool core the agent installs into the consumer's project root.
 # Plain (raw) string so shell escapes survive verbatim; __BASE__ is filled at request time.
@@ -32,6 +39,11 @@ the first one's prototypes, so mint only when there is no config):
 
 The token is low-value and rotatable — reference it via `$PROTOPEEK_TOKEN`; no need to echo it.
 
+`PROTOPEEK_DEFAULT_DOMAIN` is the user's default reviewer domain, and it lives ONLY here — the
+server never applies it. When an upload has no other allowlist, include it in `domains` yourself
+and tell the user (e.g. "Allowlist: anyone @acme.com — your default"). The server creates exactly
+the rules in the request; an upload with none is locked (nobody can view) until rules are added.
+
 ## The loop
 up (share) -> send the URL, wait -> status (poll) -> feedback (pull + SYNTHESIZE, never dump) ->
 regenerate -> up --update -> "build it for real."
@@ -42,6 +54,8 @@ offer placeholders first. No need to re-ask on --update or a re-share already ap
 
 ## Operations  (curl; auth header: -H "Authorization: Bearer $PROTOPEEK_TOKEN")
 - up:       POST /api/prototypes  -F html=@<path> -F name=... [-F domains=...] [-F emails=...] [-F update_of=<uuid>]
+            (rules = exactly what you send — include $PROTOPEEK_DEFAULT_DOMAIN in domains unless a
+            locked/private share is intended; the response's `rules` is the effective allowlist)
 - list:     GET  /api/prototypes                              (includes total_comments / has_new hints)
 - status:   GET  /api/prototypes/<uuid>/status                (read-only)
 - feedback: GET  /api/prototypes/<uuid>/feedback[?since=<ts>]   (advances the watermark)
@@ -131,9 +145,9 @@ payload for you to synthesize. Facts your user may want before you proceed:
 
 ## Recommended setup — have your user run the installer
 
-The five skills (`proto-up`, `proto-status`, `proto-feedback`, `proto-list`,
-`proto-delete`) install from the public repo, so what lands on disk is inspectable and
-versioned. Suggest your user run ONE of these themselves:
+The six skills (`proto-up`, `proto-status`, `proto-feedback`, `proto-list`,
+`proto-delete`, `proto-config`) install from the public repo, so what lands on disk is
+inspectable and versioned. Suggest your user run ONE of these themselves:
 
 ```bash
 npx skills@latest add Brightwing-Systems-LLC/protopeek
@@ -201,10 +215,10 @@ natively; in Claude Code, add `@AGENTS.md` to `CLAUDE.md`):
 {agents_md}
 ````
 
-Then add the five commands, whose home depends on which agent you are:
+Then add the six commands, whose home depends on which agent you are:
 - **Claude Code** → create each file below in the project's `.claude/commands/` (keep the `---`
   frontmatter). They become `/proto-up`, `/proto-status`, `/proto-feedback`, `/proto-list`,
-  `/proto-delete`.
+  `/proto-delete`, `/proto-config`.
 - **Codex** → install them as **skills** in `~/.codex/skills/` (or a repo's `.agents/skills/`). Codex
   custom *prompts* are deprecated — use skills. (Or just rely on the operations in `AGENTS.md`.)
 - **Gemini** → a small command/extension, plus a `GEMINI.md` that points at `AGENTS.md`.
@@ -217,14 +231,17 @@ Then add the five commands, whose home depends on which agent you are:
 Verify with `curl {base}/api/me -H "Authorization: Bearer <token>"` (should return your status), then
 tell the user setup is done and show the loop:
 - `/proto-up ./prototype.html` — uploads a self-contained HTML prototype, prints a private
-  shareable link. Reviewers on your default domain can open it with no signup; add
-  `--allow name@partner.com` to invite others. Re-running on the same file publishes a new
-  version behind the same link (`--new` forces a fresh one).
+  shareable link, and states who can view it (your default reviewer domain is applied
+  explicitly and announced; `--allow` adds people, `--private` skips the default).
+  Re-running on the same file publishes a new version behind the same link (`--new`
+  forces a fresh one).
 - `/proto-status <ref>` — cheap "is there new feedback yet?" check.
 - `/proto-feedback <ref>` — pulls the feedback and synthesizes it (themes, conflicts, a concrete
   change list). Iterate: regenerate → `/proto-up` → repeat.
 - `/proto-list` — every prototype this token owns, with new-feedback hints.
 - `/proto-delete <ref>` — permanently removes one (link, versions, all feedback; asks first).
+- `/proto-config` — show the setup (token status, default reviewer domain, log), or change
+  the default with `set-default <domain>` / `clear-default`.
 
 `<ref>` can be a share link/UUID **or** a natural reference like "the dashboard from yesterday",
 resolved against your prototype log.

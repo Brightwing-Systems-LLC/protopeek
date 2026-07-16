@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "ProtoPeek — share HTML prototypes for annotated review, pull the feedback back into your agent.",
-    "version": "1.1.0"
+    "version": "1.2.0"
   },
   "plugins": [
     {
       "name": "protopeek",
       "source": "./",
-      "description": "The /proto-up, /proto-status, /proto-feedback, /proto-list, /proto-delete skills for the ProtoPeek review loop (protopeek.dev).",
+      "description": "The /proto-up, /proto-status, /proto-feedback, /proto-list, /proto-delete, /proto-config skills for the ProtoPeek review loop (protopeek.dev).",
       "author": {
         "name": "Brightwing Systems, LLC"
       },

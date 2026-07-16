@@ -15,7 +15,8 @@ Arguments: the first token is the path to the self-contained `.html` file. Optio
 
 - `--name "..."` — display name (defaults to the file name).
 - `--allow <domain-or-email>` — add an allowlist rule (repeatable; comma-separate values).
-  If omitted, the token's default reviewer domain (set at mint time) is applied by the server.
+- `--private` — don't apply your default reviewer domain. Alone: a locked share (nobody
+  can view until rules are added). With `--allow`: exactly those rules and nothing else.
 - `--new` — force a FRESH link even if this file was shared before.
 - `--update <url-or-uuid>` — explicitly target an existing link (overrides the log lookup).
 
@@ -29,7 +30,8 @@ CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
 If there is still no `$PROTOPEEK_TOKEN`, **ask the user before doing anything**: minting a
 token is one anonymous API call to protopeek.dev — no account, no signup, no personal data —
 and the token will be stored at `~/.config/protopeek/config` (chmod 600). Suggest a default
-reviewer domain (from `git config user.email`'s domain, or ask; blank is fine). On a yes:
+reviewer domain (from `git config user.email`'s domain, or ask; blank is fine — it's a
+local convenience, changeable anytime with `/proto-config set-default`). On a yes:
 
 ```bash
 mkdir -p "$CFG"
@@ -45,7 +47,16 @@ Mint only if the config is missing (a second token would orphan the first token'
 prototypes). The token is low-value and rotatable — reference it as `$PROTOPEEK_TOKEN`,
 never echo it, never commit it.
 
-## Step 1 — Confirm before the first upload of a file
+## Step 1 — Build the allowlist (explicit, no server magic)
+
+The server applies exactly the rules in the request; nothing is added behind your back.
+Split `--allow` values into `domains` (no `@`) and `emails` (contains `@`), joined
+comma-separated. Unless `--private` was given, include `$PROTOPEEK_DEFAULT_DOMAIN` in
+`domains` (your configured default — see `/proto-config`). Tell the user what the
+allowlist will be, e.g. "Allowlist: anyone @copient.ai (your default) + jane@partner.com".
+If it ends up EMPTY, warn: the link will be locked — nobody can view until rules are added.
+
+## Step 2 — Confirm before the first upload of a file
 
 Before uploading a file for the first time, tell the user in one line where it's going:
 the HTML is stored on protopeek.dev, reachable only via the unguessable link by reviewers
@@ -54,10 +65,9 @@ contains real personal data (real names, emails, customer records), point that o
 offer to swap in placeholders first. On an update, or re-sharing a file the user already
 approved, don't re-ask.
 
-## Step 2 — Create or update?
+## Step 3 — Create or update?
 
-Split `--allow` values into `domains` (no `@`) and `emails` (contains `@`), joined
-comma-separated. Then decide the target before uploading:
+Decide the target before uploading:
 
 - `--update <url-or-uuid>` → extract the trailing UUID and pass `update_of=<uuid>`.
 - `--new` → always create a fresh link.
@@ -78,15 +88,18 @@ curl -s -X POST "$PROTOPEEK_BASE_URL/api/prototypes" \
   -F "update_of=<uuid-if-any>"
 ```
 
-## Step 3 — Report and record
+## Step 4 — Report and record
 
-Parse the JSON response (`uuid`, `url`, `version`, `expires_at`) and print clearly: the
-**shareable URL**, the version number, and the expiry (a flat 30 days from upload). Then
-record it in `$CFG/prototypes.json` (atomic write — temp file + rename): a record keyed by
-`uuid` with `url`, `name`, `source_path`, `source_basename`, `project_dir`, `created_at`,
-`expires_at`, `version`, and the `content_sha256` of the uploaded file. On an update,
-refresh the existing record (`version`, `content_sha256`, `name`) instead of adding one.
-This lets a later session resolve "yesterday's dashboard" without a typed UUID.
+Parse the JSON response (`uuid`, `url`, `version`, `expires_at`, `rules`) and print
+clearly: the **shareable URL**, the version number, the expiry (a flat 30 days from
+upload), and **who can view** — the effective allowlist from `rules` (e.g. "anyone
+@copient.ai, jane@partner.com"); if `rules` is empty, flag it: **locked — nobody can
+view yet**. Then record it in `$CFG/prototypes.json` (atomic write — temp file +
+rename): a record keyed by `uuid` with `url`, `name`, `source_path`, `source_basename`,
+`project_dir`, `created_at`, `expires_at`, `version`, and the `content_sha256` of the
+uploaded file. On an update, refresh the existing record (`version`, `content_sha256`,
+`name`) instead of adding one. This lets a later session resolve "yesterday's dashboard"
+without a typed UUID.
 
 Remind the user: send the URL to reviewers; `/proto-status <url>` polls cheaply,
 `/proto-feedback <url>` pulls and synthesizes. If the response is an error, show the
