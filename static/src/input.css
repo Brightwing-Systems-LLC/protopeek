@@ -262,8 +262,9 @@ main.container { max-width:72rem; margin-inline:auto; padding:1.75rem 1.5rem; }
   display:grid; grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
   gap:3rem; align-items:start; margin:6vh 0 3.5rem;
 }
-/* padding-top matches .card's inner padding so the two tags sit on one optical line */
-.hero__lead { min-width:0; padding-top:1.15rem; }
+/* No top padding: the eye reads the card's BORDER as the right column's top edge,
+   so the lead's first line must sit level with it, not with the card's inner tag. */
+.hero__lead { min-width:0; }
 .hero__lead h1 { font-size:clamp(2.1rem,3.6vw,3.4rem); margin:.5rem 0 .8rem; }
 .hero__lead .sub { font-size:1.12rem; line-height:1.6; text-wrap:pretty; max-width:36rem; }
 /* min-width:0 so the card can shrink below its content's min-content instead of
