@@ -204,7 +204,7 @@ Everything below is enforced in code you can read in this repo:
 - **Screenshot hygiene:** client screenshots are decoded and **re-encoded through Pillow**
   to bounded WebP (≤1600px, ≤1MB) — an embedded payload doesn't survive re-encoding.
 - **Storage:** prototypes and screenshots live in Postgres (no S3, no third-party object
-  store). Transactional email via Postmark. No analytics, no tracking cookies.
+  store). No analytics, no tracking cookies.
 - **Tokens:** anonymous, rotatable, revocable, scoped to their own prototypes.
 
 Formal docs: [Terms](https://protopeek.dev/tos) ·
