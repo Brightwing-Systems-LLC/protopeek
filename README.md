@@ -79,6 +79,7 @@ email at [protopeek.dev/token](https://protopeek.dev/token) so it's recoverable.
 ```text
 you>  /proto-up ./tempo.html --allow example.com
       ✓ https://protopeek.dev/p/d2a6…39b8   (v1, expires in 30 days)
+        viewable by: anyone @acme.com (your default) · anyone @example.com
 
       # send the link; reviewers enter their email once, then pin comments on the page
 
@@ -116,8 +117,9 @@ Details worth knowing:
 Two roles, two separate credentials, deliberately asymmetric:
 
 **Owners** hold a `pp_` bearer token (minted anonymously, no signup). It authenticates
-the management API — upload, list, status, feedback, allowlist edits. Tokens are
-rotatable and scoped: a token can only ever see its own prototypes.
+the management API — upload, list, status, feedback, allowlist edits, rename,
+deactivate/reactivate, delete. Tokens are rotatable and scoped: a token can only ever
+see its own prototypes.
 
 **Reviewers** never authenticate in the account sense. A reviewer opens the link, enters
 an email once, and that email is checked against the prototype's allowlist (whole domains
@@ -273,12 +275,12 @@ Runtime knobs live in django-constance (`/admin/constance/config/`, no restart n
 config/         settings (environs), urls, asgi, celery, api.py (Ninja + auth tiers), health.py
 accounts/       email-login User + DeviceToken (pp_ tokens), allauth, token sign-in/claim
 prototypes/     Prototype / PrototypeVersion / AccessRule, allowlist, signed-cookie identity,
-                owner API, reviewer views (overlay + reviewer-bar injection)
+                owner API, reviewer views (overlay + reviewer-bar injection), retention purge
 feedback/       Reviewer / Annotation / Comment / AnnotationShot + the SitePing widget contract
 siteconfig/     django-constance registry + typed accessors
 pages/          landing, ToS/Privacy, /agent.md
 common/         email facade
-skills/         the four agent skills (what the installers copy)
+skills/         the six agent skills (what the installers copy)
 .claude-plugin/ Claude Code plugin + marketplace manifests
 static/js/      vendored siteping.global.js + html2canvas + viewer-chrome.js
 ```

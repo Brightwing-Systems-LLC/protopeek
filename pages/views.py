@@ -46,11 +46,11 @@ the rules in the request; an upload with none is locked (nobody can view) until 
 
 ## The loop
 up (share) -> send the URL, wait -> status (poll) -> feedback (pull + SYNTHESIZE, never dump) ->
-regenerate -> up --update -> "build it for real."
+regenerate -> up again (same link, new version; update_of=<uuid>) -> "build it for real."
 
 Before the FIRST upload of a file, say in one line where it goes (protopeek.dev, behind a private
 link + email allowlist, for 30 days) and get an OK; if it visibly contains real personal data,
-offer placeholders first. No need to re-ask on --update or a re-share already approved.
+offer placeholders first. No need to re-ask on an update or a re-share already approved.
 
 ## Operations  (curl; auth header: -H "Authorization: Bearer $PROTOPEEK_TOKEN")
 - up:       POST /api/prototypes  -F html=@<path> -F name=... [-F domains=...] [-F emails=...] [-F update_of=<uuid>]
@@ -107,7 +107,7 @@ def agent_md(request):
     pointed at to install ProtoPeek's shared AGENTS.md + slash commands and walk the user
     through token-first setup. Fenced command blocks use four backticks so their inner
     ```bash fences nest cleanly; the AGENTS.md block uses a ````text fence so it never
-    collides with the four command blocks.
+    collides with the command blocks.
     """
     base = settings.BASE_URL
     agents_md = _AGENTS_MD.replace("__BASE__", base)

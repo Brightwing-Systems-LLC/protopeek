@@ -5,7 +5,7 @@ lives on the model; only platform defaults belong here."""
 CONSTANCE_CONFIG = {
     "DEFAULT_ALLOW_DOMAIN": (
         "",
-        "Domain seeded as the default allowlist rule on every upload (blank = none).",
+        "Prefilled into the dashboard upload form's domains field when the owner has no default of their own (blank = none). Never applied server-side — uploads get exactly the rules they send.",
         str,
     ),
     "ENTER_RATE_LIMIT": (

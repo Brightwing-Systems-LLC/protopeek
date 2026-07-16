@@ -23,7 +23,9 @@ curl -s "$PROTOPEEK_BASE_URL/api/prototypes" -H "Authorization: Bearer $PROTOPEE
 ## Step 3 — Report and reconcile
 
 Print a compact table: name · version · live/expired · feedback (`total_comments`, with a
-**new** marker when `has_new` is true) · share URL. For any row marked new, suggest
+**new** marker when `has_new` is true) · share URL. A live prototype whose `rules` is
+empty is **locked** — nobody can view it — so mark it "locked", not "live".
+For any row marked new, suggest
 `/proto-status <url>` (exact new-item count, watermark-safe) or `/proto-feedback <url>`
 (pull + synthesize). `/proto-delete <url>` removes one for good.
 
