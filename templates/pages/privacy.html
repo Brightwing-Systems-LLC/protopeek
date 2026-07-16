@@ -93,11 +93,13 @@
 
   <h2>5. Data Retention</h2>
   <p>Every prototype is retained for a flat 30 days from upload, after which its link stops
-  resolving. Stored prototype content and feedback records persist so owners can re-pull past
-  feedback, until the owner deletes them or requests deletion — deletion requests are honored
-  within 30 days, except where retention is required by law. The reviewer-identity cookie
-  expires after about 90 days. Server logs are kept for a limited period for security and
-  operations.</p>
+  resolving. For 14 days after expiry, the stored content and feedback are kept so the owner
+  can still pull past feedback or re-open the link; after that grace period they are
+  permanently deleted — the prototype, every stored version, all feedback, and all
+  screenshots. Owners can also permanently delete any prototype immediately, at any time, via
+  the dashboard or API. Deletion requests for other stored data are honored within 30 days,
+  except where retention is required by law. The reviewer-identity cookie expires after about
+  90 days. Server logs are kept for a limited period for security and operations.</p>
 
   <h2>6. International Data Transfers</h2>
   <p>Our servers are located in the United States. If you access the Service from outside the
@@ -116,6 +118,8 @@
   <p>Owners may:</p>
   <ul>
     <li>Deactivate a prototype or let its link expire at any time, via the dashboard or API</li>
+    <li>Permanently delete a prototype — its content and all associated feedback — at any
+      time, via the dashboard or API, effective immediately</li>
     <li>Revoke or rotate access tokens at any time</li>
     <li>Request a copy or deletion of stored data by contacting
       <a href="mailto:{{ PRIVACY_EMAIL }}">{{ PRIVACY_EMAIL }}</a></li>

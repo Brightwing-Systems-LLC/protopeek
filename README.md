@@ -14,7 +14,7 @@ you                      reviewers                  you (again)
 /proto-up demo.html  →   open the private link   →  /proto-status  (anything new?)
   ↳ prints share URL     pin comments on the page   /proto-feedback
                          (email gate, no signup)      ↳ themes · conflicts · change list
-                                                    edit → /proto-up --update → repeat
+                                                    edit → /proto-up (same link, v2) → repeat
 ```
 
 ---
@@ -25,7 +25,7 @@ you                      reviewers                  you (again)
 - [Quick start (hosted)](#quick-start-hosted)
 - [The loop, in practice](#the-loop-in-practice)
 - [How access control works](#how-access-control-works)
-- [The four skills](#the-four-skills)
+- [The five skills](#the-five-skills)
 - [API reference](#api-reference)
 - [Privacy & security](#privacy--security)
 - [Self-hosting](#self-hosting)
@@ -93,13 +93,15 @@ you>  /proto-feedback https://protopeek.dev/p/d2a6…39b8
       … want me to make these edits and re-share as v2?
 
 you>  yes
-      ✓ /proto-up ./tempo.html --update d2a6…39b8   → same link, now v2
+      ✓ /proto-up ./tempo.html   → same link, now v2
 ```
 
 Details worth knowing:
 
-- **`--update` keeps the link.** Reviewers refresh and see v2; their old comments stay
-  pinned to the version they were left on.
+- **Re-running `/proto-up` on a file keeps the link.** It publishes a new version behind
+  the same URL (like a deploy tool) — reviewers refresh and see v2; their old comments
+  stay pinned to the version they were left on. `--new` forces a fresh link;
+  `--update <url>` targets one explicitly.
 - **`/proto-status` is free to spam.** It reads activity counts without consuming the
   "new since last pull" watermark. Only `/proto-feedback` advances it.
 - **Natural references work.** "the dashboard from yesterday" resolves against a local
@@ -134,16 +136,18 @@ access    =  viewable AND allowed
 Honest caveat (also in the [Terms](https://protopeek.dev/tos)): reviewer identity is
 self-asserted — fine for design review attribution, not a strong identity guarantee.
 Anyone with the link *and* an allowlisted email address's cooperation can view. Links
-self-expire after a flat 30 days, and owners can deactivate one at any time.
+self-expire after a flat 30 days, and owners can deactivate — or permanently delete —
+one at any time.
 
-## The four skills
+## The five skills
 
 | Skill | What it does | Side effects |
 |---|---|---|
-| `/proto-up <file> [--name] [--allow] [--update]` | Upload a prototype (or a new version behind the same link); prints the share URL | Asks before minting a token (first run) and before the first upload of a file |
+| `/proto-up <file> [--name] [--allow] [--new] [--update]` | Upload a prototype; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run) and before the first upload of a file |
 | `/proto-status <ref>` | Activity counts: reviewers, comments, **new since last pull** | None — read-only, safe to repeat |
 | `/proto-feedback <ref>` | Pulls annotations + threads + screenshots, synthesizes themes/conflicts/changes | Advances the new-since watermark |
-| `/proto-list` | Every prototype your token owns, with live/expired status and links | Reconciles the local prototype log |
+| `/proto-list` | Every prototype your token owns, with live/expired status, new-feedback hints, and links | Reconciles the local prototype log |
+| `/proto-delete <ref>` | Permanently deletes one — link, every version, all feedback | Irreversible; always confirms first (offers reversible deactivation instead) |
 
 The skills are plain instructions over `curl` — no SDK, no daemon. Read them in
 [`skills/`](skills/) before installing, or vendor and edit them; they're MIT like
@@ -169,13 +173,14 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 | `POST` | `/api/tokens` | mint an anonymous owner token (rate-limited; no auth) |
 | `GET` | `/api/me` | token status + owner summary |
 | `POST` | `/api/prototypes` | multipart upload — `html` file + `name`, `domains`, `emails`, optional `update_of=<uuid>` → `{uuid, url, version, expires_at}` |
-| `GET` | `/api/prototypes` | list your prototypes (+ allowlist rules) |
+| `GET` | `/api/prototypes` | list your prototypes (+ allowlist rules, `total_comments` / `has_new` activity hints) |
 | `GET` | `/api/prototypes/{uuid}` | one prototype |
+| `PATCH` | `/api/prototypes/{uuid}` | `{"name": …, "is_active": …}` — rename, deactivate, or reactivate (reactivating an expired link restarts the 30-day clock) |
+| `DELETE` | `/api/prototypes/{uuid}` | permanently delete — the link, every version's HTML, all feedback and screenshots (204 on success) |
 | `GET` | `/api/prototypes/{uuid}/status` | activity counts — does **not** advance the watermark |
 | `GET` | `/api/prototypes/{uuid}/feedback[?since=ts]` | full agent-shaped payload — **advances** the watermark |
 | `GET` | `/api/prototypes/{uuid}/annotations/{id}/shot` | reviewer screenshot (WebP; ETag = sha256) |
 | `POST` | `/api/prototypes/{uuid}/access` | add/remove allowlist domains & emails |
-| `POST` | `/api/prototypes/{uuid}/expire` | deactivate the link |
 
 The feedback payload per annotation: `id`, `type` (question/change/bug/other), `note`,
 `author`, `version`, `resolved`, `css_selector`, `element_snapshot`, a `thread[]` of
@@ -199,6 +204,9 @@ Everything below is enforced in code you can read in this repo:
   [`feedback/api.py`](feedback/api.py)).
 - **Retention:** a flat 30 days for everyone — a deploy-time invariant
   (`PROTOTYPE_EXPIRY_HOURS`), deliberately not a runtime knob, so it can't silently drift.
+  Expired prototypes are **hard-deleted 14 days after expiry** (`PROTOTYPE_PURGE_GRACE_DAYS`,
+  enforced by a daily purge task), and owners can delete any prototype instantly via
+  `DELETE /api/prototypes/{uuid}`, `/proto-delete`, or the dashboard.
 - **Author integrity:** comment authorship is stamped server-side from the signed cookie;
   the client-supplied identity is ignored.
 - **Screenshot hygiene:** client screenshots are decoded and **re-encoded through Pillow**
@@ -313,15 +321,19 @@ search, no crawlable index.
 
 **What if the link leaks?** A leaked link alone doesn't grant access (the email gate
 still applies), and every link dies after 30 days. You can also deactivate it instantly
-(`/api/prototypes/{uuid}/expire` or the dashboard).
+(`PATCH /api/prototypes/{uuid}` with `{"is_active": false}`, or the dashboard) — or
+delete the prototype outright.
 
 **What exactly does my agent send to protopeek.dev?** The HTML file, a name, and
 allowlist rules — that's the entire upload payload. Conversations never leave your
 machine. Verify in [`skills/proto-up/SKILL.md`](skills/proto-up/SKILL.md) and
 [`prototypes/api.py`](prototypes/api.py).
 
-**Can I delete my data?** Deactivate or let links expire anytime; for deletion of stored
-content, email privacy@brightwingsystems.com (see the
+**Can I delete my data?** Yes, instantly and self-serve: `/proto-delete <ref>` (or
+`DELETE /api/prototypes/{uuid}`, or the dashboard) permanently removes a prototype —
+every version, all feedback, all screenshots. Anything you don't delete yourself is
+purged automatically 14 days after its 30-day expiry. For anything else (e.g. data tied
+to your email), contact privacy@brightwingsystems.com (see the
 [Privacy Policy](https://protopeek.dev/privacy)).
 
 **What if I lose my token?** An unclaimed token can't be recovered — claim it with an

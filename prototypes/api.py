@@ -1,14 +1,15 @@
 """Owner-facing prototype management (auth: Bearer token, applied at the router mount)."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.conf import settings
-from django.db.models import Max
+from django.db.models import Count, Max
 from django.http import HttpResponse, HttpResponseNotModified, JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from ninja import File, Form, Router, Schema
 from ninja.files import UploadedFile
+from ninja.responses import Status
 
 from feedback.models import Annotation, AnnotationShot, Comment
 
@@ -42,6 +43,11 @@ class PrototypeOut(Schema):
     is_active: bool
     is_expired: bool
     rules: list[RuleOut]
+    # Lightweight activity hint ("anything new here?"); the exact new-item count
+    # lives in /status, which stays the per-prototype polling endpoint.
+    total_comments: int = 0
+    last_activity: datetime | None = None
+    has_new: bool = False
 
 
 class AccessIn(Schema):
@@ -51,8 +57,9 @@ class AccessIn(Schema):
     remove_emails: list[str] = []
 
 
-class ExpireIn(Schema):
-    deactivate: bool = False
+class PrototypePatch(Schema):
+    name: str | None = None
+    is_active: bool | None = None
 
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
@@ -77,7 +84,34 @@ def _seed_rules(prototype: Prototype, domains, emails):
         )
 
 
-def _serialize(p: Prototype) -> dict:
+def _activity_map(prototypes) -> dict:
+    """Per-prototype comment totals + latest activity in two grouped queries (no N+1)."""
+    acc: dict = {}
+    annotations = (
+        Annotation.objects.filter(version__prototype__in=prototypes)
+        .values("version__prototype")
+        .annotate(n=Count("id"), latest=Max("created_at"))
+    )
+    comments = (
+        Comment.objects.filter(annotation__version__prototype__in=prototypes)
+        .values("annotation__version__prototype")
+        .annotate(n=Count("id"), latest=Max("created_at"))
+    )
+    for row in annotations:
+        acc[row["version__prototype"]] = {"total": row["n"], "last": row["latest"]}
+    for row in comments:
+        cur = acc.setdefault(
+            row["annotation__version__prototype"], {"total": 0, "last": None}
+        )
+        cur["total"] += row["n"]
+        if cur["last"] is None or (row["latest"] and row["latest"] > cur["last"]):
+            cur["last"] = row["latest"]
+    return acc
+
+
+def _serialize(p: Prototype, activity: dict | None = None) -> dict:
+    a = (activity or {}).get(p.pk, {})
+    last = a.get("last")
     return {
         "uuid": str(p.uuid),
         "name": p.name,
@@ -88,6 +122,9 @@ def _serialize(p: Prototype) -> dict:
         "is_active": p.is_active,
         "is_expired": p.is_expired,
         "rules": [{"kind": r.kind, "value": r.value} for r in p.access_rules.all()],
+        "total_comments": a.get("total", 0),
+        "last_activity": last,
+        "has_new": bool(last and (p.last_fetched_at is None or last > p.last_fetched_at)),
     }
 
 
@@ -143,12 +180,13 @@ def upload_prototype(
 
 @router.get("", response=list[PrototypeOut])
 def list_prototypes(request):
-    qs = (
+    qs = list(
         Prototype.objects.filter(owner=request.auth)
         .select_related("current_version")
         .prefetch_related("access_rules")
     )
-    return [_serialize(p) for p in qs]
+    activity = _activity_map(qs)
+    return [_serialize(p, activity) for p in qs]
 
 
 @router.get("/{uuid}", response=PrototypeOut)
@@ -158,7 +196,7 @@ def get_prototype(request, uuid: str):
         uuid=uuid,
         owner=request.auth,
     )
-    return _serialize(p)
+    return _serialize(p, _activity_map([p]))
 
 
 @router.post("/{uuid}/access", response=PrototypeOut)
@@ -177,14 +215,36 @@ def edit_access(request, uuid: str, payload: AccessIn):
     return _serialize(p)
 
 
-@router.post("/{uuid}/expire", response=PrototypeOut)
-def expire(request, uuid: str, payload: ExpireIn):
-    p = get_object_or_404(Prototype, uuid=uuid, owner=request.auth)
-    if payload.deactivate:
-        p.is_active = False
-        p.save(update_fields=["is_active"])
-    p.refresh_from_db()
+@router.patch("/{uuid}", response=PrototypeOut)
+def edit_prototype(request, uuid: str, payload: PrototypePatch):
+    """Rename and/or flip the link on/off. Reactivating an expired prototype restarts
+    the 30-day clock — mirrors the dashboard's Re-open, since a reactivated-but-expired
+    link would still be dead."""
+    p = get_object_or_404(Prototype.objects.prefetch_related("access_rules"), uuid=uuid, owner=request.auth)
+    fields = []
+    if payload.name is not None and payload.name.strip():
+        p.name = payload.name.strip()[:200]
+        fields.append("name")
+    if payload.is_active is not None:
+        p.is_active = payload.is_active
+        fields.append("is_active")
+        if payload.is_active and p.is_expired:
+            p.expires_at = timezone.now() + timedelta(
+                hours=settings.PROTOTYPE_EXPIRY_HOURS
+            )
+            fields.append("expires_at")
+    if fields:
+        p.save(update_fields=fields)
     return _serialize(p)
+
+
+@router.delete("/{uuid}", response={204: None})
+def delete_prototype(request, uuid: str):
+    """Hard delete: the link, every version's HTML, all annotations/comments/screenshots,
+    and the allowlist go with it (FK cascade). Irreversible — clients confirm first."""
+    p = get_object_or_404(Prototype, uuid=uuid, owner=request.auth)
+    p.delete()
+    return Status(204, None)
 
 
 def _status_block(p: Prototype, watermark) -> dict:

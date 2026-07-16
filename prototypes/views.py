@@ -105,6 +105,10 @@ def prototype_action(request, uuid):
             )
         prototype.save(update_fields=["is_active", "expires_at"])
         messages.success(request, "Re-opened.")
+    elif action == "delete":
+        name = prototype.name
+        prototype.delete()
+        messages.success(request, f"Deleted “{name}” and all its feedback.")
     return redirect("dashboard")
 
 

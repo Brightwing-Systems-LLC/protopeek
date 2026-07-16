@@ -1,6 +1,6 @@
 ---
 name: proto-up
-description: Upload a self-contained HTML prototype to ProtoPeek (protopeek.dev) and print the private, shareable review link. Use when the user wants to share a prototype for review, publish a new version of one, or says "proto-up".
+description: Upload a self-contained HTML prototype to ProtoPeek (protopeek.dev) and print the private, shareable review link. Re-running on the same file publishes a new version behind the same link. Use when the user wants to share a prototype for review, publish a new version of one, or says "proto-up".
 ---
 
 Upload an HTML prototype to ProtoPeek and return a shareable link. ProtoPeek
@@ -8,12 +8,16 @@ Upload an HTML prototype to ProtoPeek and return a shareable link. ProtoPeek
 the file behind an unguessable link, gated by an email allowlist, for a flat 30 days.
 Invited reviewers pin comments on the page; `/proto-feedback` pulls them back.
 
+Works like a deploy tool: the first run of a file mints a link; later runs publish a new
+version behind the SAME link by default (reviewers just refresh — no link churn).
+
 Arguments: the first token is the path to the self-contained `.html` file. Optional flags:
 
 - `--name "..."` — display name (defaults to the file name).
 - `--allow <domain-or-email>` — add an allowlist rule (repeatable; comma-separate values).
   If omitted, the token's default reviewer domain (set at mint time) is applied by the server.
-- `--update <url-or-uuid>` — publish a NEW VERSION behind the same link (no link churn).
+- `--new` — force a FRESH link even if this file was shared before.
+- `--update <url-or-uuid>` — explicitly target an existing link (overrides the log lookup).
 
 ## Step 0 — Config (ask before minting)
 
@@ -47,16 +51,22 @@ Before uploading a file for the first time, tell the user in one line where it's
 the HTML is stored on protopeek.dev, reachable only via the unguessable link by reviewers
 whose email matches the allowlist, and expires in 30 days. If the prototype visibly
 contains real personal data (real names, emails, customer records), point that out and
-offer to swap in placeholders first. On `--update`, or re-sharing a file the user already
+offer to swap in placeholders first. On an update, or re-sharing a file the user already
 approved, don't re-ask.
 
-## Step 2 — Parse and upload
+## Step 2 — Create or update?
 
 Split `--allow` values into `domains` (no `@`) and `emails` (contains `@`), joined
-comma-separated. If `--update` was given, extract the trailing UUID from the URL and pass
-`update_of=<uuid>`. Otherwise, if `$CFG/prototypes.json` already holds a record with the
-same content SHA under this project directory, suggest `--update <that-uuid>` instead of
-churning a new link — ask first.
+comma-separated. Then decide the target before uploading:
+
+- `--update <url-or-uuid>` → extract the trailing UUID and pass `update_of=<uuid>`.
+- `--new` → always create a fresh link.
+- Neither flag: check `$CFG/prototypes.json` for records under this project directory
+  whose `source_path` matches this file (or whose `content_sha256` matches). Exactly one
+  match → **update it by default**: announce "publishing v<N+1> behind <url>" and pass
+  `update_of=<uuid>`. More than one candidate → list them and ask. None → create a new
+  link. (Default-update keeps the reviewers' link and feedback history in one place; a
+  fresh link is the deliberate exception, not an accident.)
 
 ```bash
 curl -s -X POST "$PROTOPEEK_BASE_URL/api/prototypes" \
@@ -74,8 +84,9 @@ Parse the JSON response (`uuid`, `url`, `version`, `expires_at`) and print clear
 **shareable URL**, the version number, and the expiry (a flat 30 days from upload). Then
 record it in `$CFG/prototypes.json` (atomic write — temp file + rename): a record keyed by
 `uuid` with `url`, `name`, `source_path`, `source_basename`, `project_dir`, `created_at`,
-`expires_at`, `version`, and the `content_sha256` of the uploaded file. This lets a later
-session resolve "yesterday's dashboard" without a typed UUID.
+`expires_at`, `version`, and the `content_sha256` of the uploaded file. On an update,
+refresh the existing record (`version`, `content_sha256`, `name`) instead of adding one.
+This lets a later session resolve "yesterday's dashboard" without a typed UUID.
 
 Remind the user: send the URL to reviewers; `/proto-status <url>` polls cheaply,
 `/proto-feedback <url>` pulls and synthesizes. If the response is an error, show the

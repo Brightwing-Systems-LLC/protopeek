@@ -10,6 +10,7 @@ runs Celery eagerly, so tests need zero infra.
 import sys
 from pathlib import Path
 
+from celery.schedules import crontab
 from environs import Env
 
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -164,6 +165,14 @@ CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+# DatabaseScheduler syncs this dict into django-celery-beat's tables at beat startup,
+# so the purge schedule ships with a deploy — no admin clicking to enable retention.
+CELERY_BEAT_SCHEDULE = {
+    "purge-expired-prototypes": {
+        "task": "prototypes.tasks.purge_expired_prototypes",
+        "schedule": crontab(hour=4, minute=17),
+    }
+}
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 AUTH_USER_MODEL = "accounts.User"
@@ -278,6 +287,10 @@ FILE_UPLOAD_MAX_MEMORY_SIZE = DATA_UPLOAD_MAX_MEMORY_SIZE
 # so it can't silently drift via a stored override or a stale cache. Changeable only
 # by deploy, which is the right cadence for a product-wide policy.
 PROTOTYPE_EXPIRY_HOURS = 24 * 30
+# Expired prototypes are hard-deleted (HTML, feedback, screenshots) this many days
+# after expires_at — the grace window in which an owner can still pull feedback or
+# re-open the link. Same deploy-time-invariant reasoning as the expiry above.
+PROTOTYPE_PURGE_GRACE_DAYS = 14
 
 # ── Company identity (context-processed to every template) ───────────────────
 PRODUCT_NAME = env.str("PRODUCT_NAME", "ProtoPeek")

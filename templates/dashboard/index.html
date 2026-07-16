@@ -83,7 +83,7 @@
         {% if p.is_active %}
           <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
             {% csrf_token %}<input type="hidden" name="action" value="deactivate">
-            <button class="btn btn-sm btn-danger" type="submit">Deactivate</button>
+            <button class="btn btn-sm btn-ghost" type="submit">Deactivate</button>
           </form>
         {% else %}
           <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
@@ -93,6 +93,11 @@
         {% endif %}
         <a class="btn btn-sm btn-ghost" href="{% url 'prototype_feedback' p.uuid %}" style="flex:0;">Feedback</a>
         <a class="btn btn-sm btn-ghost" href="{% url 'viewer' p.uuid %}" target="_blank" style="flex:0;">Open viewer ↗</a>
+        <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;margin-left:auto;"
+              onsubmit="return confirm('Delete “{{ p.name|escapejs }}” permanently? Every version and all reviewer feedback go with it. This cannot be undone.')">
+          {% csrf_token %}<input type="hidden" name="action" value="delete">
+          <button class="btn btn-sm btn-danger" type="submit">Delete</button>
+        </form>
       </div>
     </div>
   {% empty %}

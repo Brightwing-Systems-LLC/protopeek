@@ -4,7 +4,7 @@ from django.shortcuts import redirect, render
 
 # Slash commands installed into a consumer's project, read verbatim from the repo
 # so /agent.md always serves what's actually shipped.
-_COMMANDS = ["proto-up", "proto-status", "proto-feedback", "proto-list"]
+_COMMANDS = ["proto-up", "proto-status", "proto-feedback", "proto-list", "proto-delete"]
 
 # The shared, cross-tool core the agent installs into the consumer's project root.
 # Plain (raw) string so shell escapes survive verbatim; __BASE__ is filled at request time.
@@ -42,9 +42,11 @@ offer placeholders first. No need to re-ask on --update or a re-share already ap
 
 ## Operations  (curl; auth header: -H "Authorization: Bearer $PROTOPEEK_TOKEN")
 - up:       POST /api/prototypes  -F html=@<path> -F name=... [-F domains=...] [-F emails=...] [-F update_of=<uuid>]
-- list:     GET  /api/prototypes
+- list:     GET  /api/prototypes                              (includes total_comments / has_new hints)
 - status:   GET  /api/prototypes/<uuid>/status                (read-only)
 - feedback: GET  /api/prototypes/<uuid>/feedback[?since=<ts>]   (advances the watermark)
+- edit:     PATCH /api/prototypes/<uuid>  '{"name":"...","is_active":true|false}'  (rename / deactivate / reactivate)
+- delete:   DELETE /api/prototypes/<uuid>   (PERMANENT — link, versions, all feedback; confirm with the user first)
 - me:       GET  /api/me
 
 ## Resolving a reference (status / feedback)
@@ -53,8 +55,10 @@ project / recency. If ambiguous, use `status` (read-only) to disambiguate and co
 `feedback` — feedback advances the "new since last pull" watermark, so never let a guess consume it.
 
 ## Retention
-Every prototype is kept a flat 30 days for everyone. If one has expired, offer to re-upload from its
-recorded source_path.
+Every prototype is kept a flat 30 days for everyone; 14 days after expiry it is purged permanently
+(HTML, feedback, screenshots). If one has expired, offer to re-upload from its recorded source_path.
+DELETE removes one sooner — it is irreversible, so always confirm with the user first (deactivating
+via PATCH is the reversible alternative).
 
 ## Windows
 Run under Git Bash or WSL; `curl` is required. `chmod` is best-effort (a harmless no-op on native
@@ -127,9 +131,9 @@ payload for you to synthesize. Facts your user may want before you proceed:
 
 ## Recommended setup — have your user run the installer
 
-The four skills (`proto-up`, `proto-status`, `proto-feedback`, `proto-list`) install from
-the public repo, so what lands on disk is inspectable and versioned. Suggest your user run
-ONE of these themselves:
+The five skills (`proto-up`, `proto-status`, `proto-feedback`, `proto-list`,
+`proto-delete`) install from the public repo, so what lands on disk is inspectable and
+versioned. Suggest your user run ONE of these themselves:
 
 ```bash
 npx skills@latest add Brightwing-Systems-LLC/protopeek
@@ -197,9 +201,10 @@ natively; in Claude Code, add `@AGENTS.md` to `CLAUDE.md`):
 {agents_md}
 ````
 
-Then add the four commands, whose home depends on which agent you are:
+Then add the five commands, whose home depends on which agent you are:
 - **Claude Code** → create each file below in the project's `.claude/commands/` (keep the `---`
-  frontmatter). They become `/proto-up`, `/proto-status`, `/proto-feedback`, `/proto-list`.
+  frontmatter). They become `/proto-up`, `/proto-status`, `/proto-feedback`, `/proto-list`,
+  `/proto-delete`.
 - **Codex** → install them as **skills** in `~/.codex/skills/` (or a repo's `.agents/skills/`). Codex
   custom *prompts* are deprecated — use skills. (Or just rely on the operations in `AGENTS.md`.)
 - **Gemini** → a small command/extension, plus a `GEMINI.md` that points at `AGENTS.md`.
@@ -213,20 +218,22 @@ Verify with `curl {base}/api/me -H "Authorization: Bearer <token>"` (should retu
 tell the user setup is done and show the loop:
 - `/proto-up ./prototype.html` — uploads a self-contained HTML prototype, prints a private
   shareable link. Reviewers on your default domain can open it with no signup; add
-  `--allow name@partner.com` to invite others; `--update <link>` publishes a new version behind
-  the same link.
+  `--allow name@partner.com` to invite others. Re-running on the same file publishes a new
+  version behind the same link (`--new` forces a fresh one).
 - `/proto-status <ref>` — cheap "is there new feedback yet?" check.
 - `/proto-feedback <ref>` — pulls the feedback and synthesizes it (themes, conflicts, a concrete
-  change list). Iterate: regenerate → `/proto-up --update` → repeat.
-- `/proto-list` — every prototype this token owns.
+  change list). Iterate: regenerate → `/proto-up` → repeat.
+- `/proto-list` — every prototype this token owns, with new-feedback hints.
+- `/proto-delete <ref>` — permanently removes one (link, versions, all feedback; asks first).
 
 `<ref>` can be a share link/UUID **or** a natural reference like "the dashboard from yesterday",
 resolved against your prototype log.
 
 **Retention:** every prototype is kept a flat **30 days**, then the link stops resolving — re-upload
-to refresh it. The user can also browse everything: **sign in with the token at {base}/token** (no
-password). Losing the token means losing access — suggest they claim it there with an email to make
-it recoverable. Then offer to generate a first prototype and run `/proto-up` on it.
+to refresh it. Expired prototypes are purged permanently 14 days after expiry; `/proto-delete`
+removes one sooner. The user can also browse everything: **sign in with the token at {base}/token**
+(no password). Losing the token means losing access — suggest they claim it there with an email to
+make it recoverable. Then offer to generate a first prototype and run `/proto-up` on it.
 
 ---
 ProtoPeek · {base} · a product of Brightwing Systems, LLC

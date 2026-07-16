@@ -33,6 +33,6 @@ and `ruff format`. Please keep PRs green: tests pass, ruff clean.
   (no S3, no Node build, HTML stored in Postgres).
 - The vendored overlay (`static/js/siteping.global.js`) is patched deliberately; see
   `static/js/SITEPING_VERSION.txt` before touching it.
-- The four agent skills live in `skills/` (that's what `npx skills add` and the Claude
+- The five agent skills live in `skills/` (that's what `npx skills add` and the Claude
   Code plugin install); `.claude/commands/` holds the same workflows in slash-command
   form and is what `/agent.md` serves for manual setup. If you change one, change both.
