@@ -21,27 +21,34 @@
     <div class="card hero__card" style="border-color: color-mix(in oklab, var(--accent) 55%, var(--border)); background: color-mix(in oklab, var(--accent) 6%, var(--surface));">
       <div class="tag">Install · one line in your terminal</div>
       <h3 style="margin:.35rem 0 .5rem;">Add the skills to your coding agent:</h3>
-      <div class="copy" style="font-size:.95rem;">
+      <div class="copy copy--wrap" style="font-size:.95rem;">
         <code id="install-cmd">npx skills@latest add Brightwing-Systems-LLC/protopeek</code>
         <button class="btn btn-sm" type="button"
                 onclick="navigator.clipboard.writeText(document.getElementById('install-cmd').textContent); this.textContent='Copied ✓'; setTimeout(()=>this.textContent='Copy',1200)">Copy</button>
       </div>
-      <p class="muted" style="margin:.7rem 0 0;">
-        Installs four inspectable skills — <span class="mono">/proto-up</span>,
-        <span class="mono">/proto-status</span>, <span class="mono">/proto-feedback</span>,
-        <span class="mono">/proto-list</span> — straight from the
-        <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">open-source repo</a>
-        into Claude Code, Codex, Cursor, or any Agent-Skills-compatible tool.
-        <strong>No signup, no password</strong> — the first <span class="mono">/proto-up</span>
-        mints an anonymous token after asking you.
-      </p>
-      <p class="muted" style="margin:.7rem 0 0;font-size:.85rem;">
-        Claude Code plugin instead: <span class="mono">claude plugin marketplace add
-        Brightwing-Systems-LLC/protopeek</span> → <span class="mono">claude plugin install
-        protopeek@protopeek</span>. Prefer manual? Your agent can follow
-        <a href="{% url 'pages:agent' %}"><span class="mono">{{ BASE_URL }}/agent.md</span></a>
-        — it asks before every consequential step.
-      </p>
+      <div class="chips">
+        <span class="chip">/proto-up</span>
+        <span class="chip">/proto-status</span>
+        <span class="chip">/proto-feedback</span>
+        <span class="chip">/proto-list</span>
+      </div>
+      <ul class="install-points">
+        <li>Four inspectable skills, straight from the
+          <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">open-source repo</a></li>
+        <li>Claude Code, Codex, Cursor — any Agent-Skills-compatible tool</li>
+        <li><strong>No signup, no password</strong> — the first <span class="mono">/proto-up</span>
+          mints an anonymous token after asking you</li>
+      </ul>
+      <details class="install-alt">
+        <summary>Other ways to install</summary>
+        <div class="copy copy--wrap"><code>claude plugin marketplace add Brightwing-Systems-LLC/protopeek</code></div>
+        <div class="copy copy--wrap" style="margin-top:.35rem;"><code>claude plugin install protopeek@protopeek</code></div>
+        <p class="muted" style="margin:.6rem 0 0;font-size:.85rem;">
+          Prefer manual? Your agent can follow
+          <a href="{% url 'pages:agent' %}"><span class="mono">{{ BASE_URL }}/agent.md</span></a>
+          — it asks before every consequential step.
+        </p>
+      </details>
     </div>
   </section>
 
@@ -137,7 +144,7 @@ Ready — try /proto-up ./prototype.html in your agent</div></div>
     </div>
 
     <div style="text-align:center;margin-top:2.5rem;">
-      <div class="copy" style="display:inline-flex;">
+      <div class="copy copy--wrap" style="display:inline-flex;max-width:100%;">
         <code id="install-cmd2">npx skills@latest add Brightwing-Systems-LLC/protopeek</code>
         <button class="btn btn-sm" type="button"
                 onclick="navigator.clipboard.writeText(document.getElementById('install-cmd2').textContent); this.textContent='Copied ✓'; setTimeout(()=>this.textContent='Copy',1200)">Copy</button>

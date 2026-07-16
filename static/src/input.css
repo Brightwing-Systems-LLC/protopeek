@@ -143,6 +143,8 @@
     border:1px solid var(--border); border-radius:3px; padding:.5rem .7rem; max-width:100%; }
   .copy code { flex:1; min-width:0; font-family:var(--font-mono); font-size:.85rem; overflow-x:auto; white-space:nowrap; }
   .copy code::before { content:"❯ "; color:var(--accent); }
+  /* Long one-liners (the npx install command) wrap instead of clipping behind a scrollbar. */
+  .copy--wrap code { white-space:pre-wrap; overflow-wrap:anywhere; overflow-x:visible; }
 
   .messages { list-style:none; padding-inline:1.5rem; margin:.9rem auto; max-width:64rem; }
   .msg { font-family:var(--font-mono); font-size:.82rem; padding:.6rem .9rem; border-radius:3px;
@@ -267,6 +269,19 @@ main.container { max-width:72rem; margin-inline:auto; padding:1.75rem 1.5rem; }
 /* the paste command must fit the narrower hero column without clipping */
 .hero__card .copy { font-size:.85rem; }
 .hero__card .copy code { font-size:.78rem; }
+.chips { display:flex; flex-wrap:wrap; gap:.4rem; margin:.75rem 0 0; }
+.chip { font-family:var(--font-mono); font-size:.72rem; padding:.18rem .55rem; border-radius:999px;
+  border:1px solid var(--border); background:var(--surface); color:var(--fg); }
+.install-points { list-style:none; padding:0; margin:.7rem 0 0; }
+.install-points li { position:relative; padding-left:1.15rem; margin:.4rem 0; color:var(--muted); font-size:.9rem; }
+.install-points li::before { content:"✓"; position:absolute; left:0; top:0; color:var(--ok); font-weight:700; }
+.install-alt { margin-top:.9rem; border-top:1px dashed var(--border); padding-top:.6rem; }
+.install-alt > summary { list-style:none; cursor:pointer; font-family:var(--font-mono); font-size:.72rem;
+  text-transform:uppercase; letter-spacing:.07em; color:var(--muted); }
+.install-alt > summary::-webkit-details-marker { display:none; }
+.install-alt > summary::before { content:"▸ "; color:var(--accent); }
+.install-alt[open] > summary::before { content:"▾ "; }
+.install-alt[open] > summary { margin-bottom:.55rem; }
 .feature-row { margin-top:.5rem; }
 @media (max-width:820px){
   /* minmax(0,1fr), NOT 1fr: plain 1fr == minmax(auto,1fr), whose auto minimum expands
