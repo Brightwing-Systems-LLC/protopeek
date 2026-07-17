@@ -132,9 +132,40 @@
           ".sp-fab,.sp-radial{opacity:0 !important;pointer-events:none !important}" +
           // 16px so iOS doesn't auto-zoom on the sidebar's search field (in this shadow)
           "input,textarea,select,[contenteditable]{font-size:16px !important}" +
-          // keep the panel's header (with its close ✕) below our top bar
-          ".sp-panel{top:var(--pp-bar-h,44px) !important}";
+          // Pin the panel between our top bar and the viewport bottom. SitePing hard-codes
+          // top:0;height:100vh; nudging top down by the bar height without capping height
+          // left the panel 44px too tall — its footer (incl. the Go-to-annotation button at
+          // the bottom of the scroll area) hung below the viewport, unreachable, and the
+          // overflow showed a stranded scrollbar. top + bottom:0 + height:auto fits it exactly.
+          ".sp-panel{top:var(--pp-bar-h,44px) !important;bottom:0 !important;height:auto !important}" +
+          // Collapse the two densest detail sections (Details, Annotation) by default so the
+          // Go-to-annotation button sits near the top; click a section title to expand. Scoped
+          // via :has() to just those sections (they own .sp-detail-meta /
+          // .sp-detail-annotation-info). The button is a SIBLING of the annotation rows, so it
+          // stays visible when the section is collapsed. Browsers without :has() render
+          // everything expanded — same as before, just a longer scroll.
+          ".sp-detail-section:has(.sp-detail-meta)>.sp-detail-section-title," +
+          ".sp-detail-section:has(.sp-detail-annotation-info)>.sp-detail-section-title" +
+          "{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}" +
+          ".sp-detail-section:has(.sp-detail-meta)>.sp-detail-section-title::after," +
+          ".sp-detail-section:has(.sp-detail-annotation-info)>.sp-detail-section-title::after" +
+          "{content:'\\25B8';margin-left:auto;opacity:.5;font-size:12px;transition:transform .2s ease}" +
+          ".sp-detail-section[data-pp-open]>.sp-detail-section-title::after{transform:rotate(90deg)}" +
+          ".sp-detail-section:not([data-pp-open]) .sp-detail-meta," +
+          ".sp-detail-section:not([data-pp-open]) .sp-detail-annotation-info{display:none}";
         sroot.appendChild(fs);
+        // Toggle a collapsible detail section when its title is clicked. Delegated on the
+        // shadow root (survives SitePing re-rendering the detail on every open). Only
+        // sections that actually have collapsible rows respond.
+        sroot.addEventListener("click", function (ev) {
+          var t = ev.target;
+          var title = t && t.closest ? t.closest(".sp-detail-section-title") : null;
+          if (!title) return;
+          var sec = title.closest(".sp-detail-section");
+          if (!sec || !sec.querySelector(".sp-detail-meta,.sp-detail-annotation-info")) return;
+          if (sec.hasAttribute("data-pp-open")) sec.removeAttribute("data-pp-open");
+          else sec.setAttribute("data-pp-open", "");
+        });
       }
       clearInterval(timer);
     } else if (tries > 80) { clearInterval(timer); }
@@ -285,13 +316,95 @@
     }).catch(function () { return null; });
   }
 
+  // ── Hide "orphan" markers whose anchor isn't currently on screen ─────────────
+  // SitePing positions every marker in document coordinates inside #siteping-markers.
+  // When an annotation's anchor is connected but not rendered — e.g. it lives on a
+  // hidden screen of a multi-screen prototype, so getBoundingClientRect() is all zeros —
+  // SitePing still shows the marker, at (scrollX-13, scrollY-13): the top-left corner.
+  // They pile at the left edge and slide with the page as you scroll. We know each
+  // marker's feedback id (data-feedback-id) and the annotation's CSS selector (sniffed
+  // from the widget list response below), so we hide any marker whose anchor doesn't
+  // render a box. Fail-safe: unknown selector → marker left exactly as SitePing placed it.
+  // Debounce with setTimeout, NOT requestAnimationFrame: rAF is paused while the tab is
+  // backgrounded, which would strand the fixup (and its pending flag) until refocus.
+  var ppFixTimer = 0;
+  function schedulePpFix() {
+    if (ppFixTimer) return;
+    ppFixTimer = setTimeout(function () { ppFixTimer = 0; ppFixMarkers(); }, 50);
+  }
+  function ppFixMarkers() {
+    var cont = document.getElementById("siteping-markers");
+    var map = window.__pp_anchors;
+    if (!cont || !map) return;
+    var nodes = cont.querySelectorAll("[data-feedback-id]");
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var sel = map[el.getAttribute("data-feedback-id")];
+      if (!sel) { el.classList.remove("pp-orphan"); continue; }
+      var anchor = null;
+      try { anchor = document.querySelector(sel); } catch (e) { anchor = null; }
+      var vis = false;
+      if (anchor) {
+        var r = anchor.getClientRects();
+        vis = r.length > 0 && (r[0].width > 0 || r[0].height > 0);
+      }
+      // Only touch the class when it actually changes, so our own mutation never
+      // re-triggers the body observer below (infinite loop guard).
+      if (el.classList.contains("pp-orphan") === vis) el.classList.toggle("pp-orphan", !vis);
+    }
+  }
+  var ppOStyle = document.createElement("style");
+  ppOStyle.textContent = "#siteping-markers .pp-orphan{display:none !important}";
+  (document.head || document.documentElement).appendChild(ppOStyle);
+  // Re-check whenever SitePing repositions markers (it rewrites their inline styles) or
+  // adds/removes them. We toggle a class, not a style, so this never re-triggers itself.
+  var ppMarkerObs = new MutationObserver(schedulePpFix);
+  function ppWatchMarkers() {
+    var cont = document.getElementById("siteping-markers");
+    if (!cont) return false;
+    ppMarkerObs.observe(cont, { childList: true, subtree: true, attributes: true, attributeFilter: ["style"] });
+    schedulePpFix();
+    return true;
+  }
+  if (!ppWatchMarkers()) {
+    var ppw = setInterval(function () { if (ppWatchMarkers()) clearInterval(ppw); }, 200);
+    setTimeout(function () { clearInterval(ppw); }, 15000);
+  }
+  // Also re-check on any prototype DOM change (a screen switch that shows/hides anchored
+  // elements), so we don't depend on SitePing's own (idle-callback) reposition firing.
+  new MutationObserver(schedulePpFix).observe(document.body, {
+    childList: true, subtree: true, attributes: true, attributeFilter: ["style", "class", "hidden"],
+  });
+  window.addEventListener("scroll", schedulePpFix, { passive: true, capture: true });
+  window.addEventListener("resize", schedulePpFix, { passive: true });
+
   // Intercept SitePing's create-feedback POST (JSON to /api/widget) and attach a
   // screenshot of the moment. On any hiccup we fall through to the original request.
+  // We also sniff the GET list response to learn each feedback's anchor selector (used
+  // by the orphan-marker fixup above).
   var _fetch = window.fetch.bind(window);
   window.fetch = function (input, init) {
     try {
       var url = typeof input === "string" ? input : (input && input.url) || "";
       var method = ((init && init.method) || (input && input.method) || "GET").toUpperCase();
+      if (method === "GET" && /\/api\/widget\b/.test(url)) {
+        return _fetch(input, init).then(function (resp) {
+          try {
+            resp.clone().json().then(function (data) {
+              var list = data && (data.feedbacks || (Array.isArray(data) ? data : null));
+              if (!list || !list.length) return;
+              var map = window.__pp_anchors || (window.__pp_anchors = {});
+              for (var i = 0; i < list.length; i++) {
+                var f = list[i];
+                var sel = f && f.annotations && f.annotations[0] && f.annotations[0].cssSelector;
+                if (f && f.id != null && sel) map[String(f.id)] = sel;
+              }
+              schedulePpFix();
+            }).catch(function () {});
+          } catch (e) {}
+          return resp;
+        });
+      }
       if (method === "POST" && /\/api\/widget\/?$/.test(url) && init && typeof init.body === "string") {
         var body = null;
         try { body = JSON.parse(init.body); } catch (e) { body = null; }
