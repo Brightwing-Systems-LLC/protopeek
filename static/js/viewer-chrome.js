@@ -231,7 +231,7 @@
   // they open each prototype.
   var INTRO_KEY = "pp_intro_" + (d.uuid || "x");
   function onCommentClick() {
-    loadH2C();  // warm the screenshot lib now so it's ready by the time they Send
+    loadShotLib();  // warm the screenshot lib now so it's ready by the time they Send
     var seen;
     try { seen = localStorage.getItem(INTRO_KEY); } catch (e) { seen = "1"; }
     if (seen) return drive("Create new annotation", "Comment");
