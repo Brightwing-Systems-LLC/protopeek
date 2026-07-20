@@ -9,11 +9,16 @@ The on-page annotation overlay. Vendored from
 (`@siteping/widget`, IIFE global build) — MIT License, © SitePing contributors.
 Version and local modifications are documented in `static/js/SITEPING_VERSION.txt`.
 
-## html2canvas (`static/js/html2canvas.min.js`)
+## modern-screenshot (`static/js/modern-screenshot.min.js`)
 
 Client-side screenshot capture for annotations. Vendored from
-[niklasvh/html2canvas](https://github.com/niklasvh/html2canvas) — MIT License,
-© Niklas von Hertzen.
+[qq15725/modern-screenshot](https://github.com/qq15725/modern-screenshot) — MIT License,
+© qq15725 and contributors.
+
+Replaced html2canvas, which reimplements CSS painting in JavaScript and therefore drops
+unsupported properties silently — `conic-gradient` backgrounds captured as blank space.
+modern-screenshot renders through an SVG `<foreignObject>`, so the browser does the
+painting and fidelity follows the reviewer's own engine.
 
 ## Fonts (`static/fonts/`)
 

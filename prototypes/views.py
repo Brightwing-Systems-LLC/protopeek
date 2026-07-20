@@ -294,7 +294,7 @@ def _inject_chrome(html: str, prototype, email: str) -> str:
             "name": prototype.name,
             "version": f"v{version}" if version else "",
             "email": email,
-            "h2c": static("js/html2canvas.min.js"),
+            "shotlib": static("js/modern-screenshot.min.js"),
         }
     ).replace("<", "\\u003c")
     snippet = (

@@ -333,20 +333,27 @@
   }
 
   // ── Screenshot capture ─────────────────────────────────────────────────────
-  // Load html2canvas lazily (once) so the initial viewer stays lean. Resolves to null
-  // if it's unavailable — capture is always best-effort and never blocks the comment.
-  function loadH2C() {
-    if (window.html2canvas) return Promise.resolve(window.html2canvas);
-    if (window.__pp_h2c) return window.__pp_h2c;
-    window.__pp_h2c = new Promise(function (resolve) {
-      if (!d.h2c) return resolve(null);
+  // Load the capture library lazily (once) so the initial viewer stays lean. Resolves to
+  // null if it's unavailable — capture is always best-effort and never blocks the comment.
+  //
+  // modern-screenshot, not html2canvas. html2canvas reimplements CSS painting in JS, so
+  // any property it doesn't know about is dropped *silently*: a conic-gradient ring came
+  // back as an empty box while the rest of the page rendered fine, and nothing in the
+  // payload said anything was missing. The agent then reasons about a page with a hole in
+  // it. modern-screenshot serializes into an SVG <foreignObject> and lets the browser
+  // paint, so fidelity is whatever the reviewer's own engine does.
+  function loadShotLib() {
+    if (window.modernScreenshot) return Promise.resolve(window.modernScreenshot);
+    if (window.__pp_shotlib) return window.__pp_shotlib;
+    window.__pp_shotlib = new Promise(function (resolve) {
+      if (!d.shotlib) return resolve(null);
       var s = document.createElement("script");
-      s.src = d.h2c;
-      s.onload = function () { resolve(window.html2canvas || null); };
+      s.src = d.shotlib;
+      s.onload = function () { resolve(window.modernScreenshot || null); };
       s.onerror = function () { resolve(null); };
       (document.head || document.documentElement).appendChild(s);
     });
-    return window.__pp_h2c;
+    return window.__pp_shotlib;
   }
 
   // Skip our own chrome + SitePing's UI so the shot shows only the prototype.
@@ -359,6 +366,9 @@
     return false;
   }
 
+  // Inverted from html2canvas's ignoreElements: modern-screenshot keeps what returns true.
+  function keepEl(node) { return !ignoreEl(node); }
+
   // Rasterize the visible viewport and stroke a highlight around the region the reviewer
   // actually dragged. Returns a WebP data URL, or null on any failure.
   //
@@ -370,17 +380,23 @@
   // with the entire column stroked. Missing/degenerate rect → whole element, which is
   // also what SitePing sends ({0,0,1,1}) when there was no drag.
   function capture(cssSelector, rect) {
-    return loadH2C().then(function (h2c) {
-      if (!h2c) return null;
+    return loadShotLib().then(function (ms) {
+      if (!ms || !ms.domToCanvas) return null;
       var vw = window.innerWidth, vh = window.innerHeight;
       var scale = Math.min(window.devicePixelRatio || 1, 2);
       var target = null;
       try { if (cssSelector) target = document.querySelector(cssSelector); } catch (e) {}
-      return h2c(document.documentElement, {
-        x: window.scrollX, y: window.scrollY, width: vw, height: vh,
-        windowWidth: vw, windowHeight: vh, scale: scale,
-        useCORS: true, allowTaint: false, backgroundColor: "#ffffff",
-        logging: false, ignoreElements: ignoreEl,
+      // modern-screenshot has no x/y crop, so shift the clone by the scroll offset and
+      // render a viewport-sized canvas. Rendering the full document and cropping also
+      // works, but a long prototype would blow past the browser's max canvas dimension —
+      // and a capture is viewport-only by definition anyway.
+      return ms.domToCanvas(document.documentElement, {
+        width: vw, height: vh, scale: scale, backgroundColor: "#ffffff",
+        style: {
+          transform: "translate(" + -window.scrollX + "px," + -window.scrollY + "px)",
+          transformOrigin: "top left",
+        },
+        filter: keepEl,
       }).then(function (canvas) {
         if (target) {
           try {

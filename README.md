@@ -296,7 +296,7 @@ pages/          landing, ToS/Privacy, /agent.md
 common/         email facade
 skills/         the six agent skills (what the installers copy)
 .claude-plugin/ Claude Code plugin + marketplace manifests
-static/js/      vendored siteping.global.js + html2canvas + viewer-chrome.js
+static/js/      vendored siteping.global.js + modern-screenshot + viewer-chrome.js
 ```
 
 Decisions, and why:
