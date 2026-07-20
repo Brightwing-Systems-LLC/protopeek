@@ -46,6 +46,15 @@
     ".modal .go{display:block;width:100%;background:#ff4b31;color:#fff;border:0;border-radius:9px;" +
     "padding:12px;font:700 15px -apple-system,system-ui,sans-serif;cursor:pointer;margin-top:4px}" +
     ".modal .go:active{background:#e23d24}" +
+    /* keyboard-shortcut callout — deliberately oversized, it's the one thing we want
+       a first-time reviewer to actually remember */
+    ".kbd-hero{display:flex;align-items:center;gap:11px;margin:0 0 16px;padding:13px 15px;" +
+    "border:1px solid #d9d2c1;border-radius:10px;background:#fff}" +
+    ".kbd-hero .k{flex:none;min-width:38px;height:38px;padding:0 10px;border-radius:8px;" +
+    "background:#131519;color:#fff;border-bottom:2px solid #000;" +
+    "font:700 20px/38px ui-monospace,SFMono-Regular,Menlo,monospace;text-align:center}" +
+    ".kbd-hero span{font-size:14px;color:#181510}" +
+    ".kbd-hero b{font-weight:700}" +
     /* animated how-to demo */
     ".demo{position:relative;height:132px;border:1px solid #d9d2c1;border-radius:10px;" +
     "background:#eef2f7;overflow:hidden;margin:0 0 16px}" +
@@ -152,8 +161,22 @@
           "{content:'\\25B8';margin-left:auto;opacity:.5;font-size:12px;transition:transform .2s ease}" +
           ".sp-detail-section[data-pp-open]>.sp-detail-section-title::after{transform:rotate(90deg)}" +
           ".sp-detail-section:not([data-pp-open]) .sp-detail-meta," +
-          ".sp-detail-section:not([data-pp-open]) .sp-detail-annotation-info{display:none}";
+          ".sp-detail-section:not([data-pp-open]) .sp-detail-annotation-info{display:none}" +
+          // The shortcuts affordance ships as a 24px "?" circle pinned bottom-right, which
+          // reads as decoration and got missed. Widen it into a plain text link. The "?"
+          // is a text node we can't remove from CSS, so it's zeroed out and the label comes
+          // from ::before — ::after is already taken by SitePing's hover tooltip, which the
+          // visible label makes redundant, so that's suppressed too.
+          ".sp-shortcuts-hint{width:auto !important;height:auto !important;padding:0 !important;" +
+          "border:0 !important;border-radius:0 !important;background:transparent !important;" +
+          "font-size:0 !important;color:var(--sp-accent) !important}" +
+          '.sp-shortcuts-hint::before{content:"Keyboard Shortcuts";font-family:var(--sp-font);' +
+          "font-size:12px;font-weight:600;line-height:1;text-decoration:underline;" +
+          "text-underline-offset:2px}" +
+          ".sp-shortcuts-hint:hover::before{text-decoration-thickness:2px}" +
+          ".sp-shortcuts-hint::after{display:none !important}";
         sroot.appendChild(fs);
+        ppWatchShortcuts(sroot);
         // Toggle a collapsible detail section when its title is clicked. Delegated on the
         // shadow root (survives SitePing re-rendering the detail on every open). Only
         // sections that actually have collapsible rows respond.
@@ -227,7 +250,9 @@
       '<li><b>1</b><span>Tap <strong>＋ Comment</strong>, then <strong>draw a box</strong> around what you mean.</span></li>' +
       '<li><b>2</b><span>Pick a type (question / change / bug), type your note, and <strong>Send</strong>.</span></li>' +
       '<li><b>3</b><span>Tap <strong>☰ Feedback</strong> anytime to see every comment.</span></li>' +
-      '</ul>';
+      '</ul>' +
+      '<div class="kbd-hero"><span class="k">C</span>' +
+      '<span>Press <b>C</b> anytime to start a comment — <b>F</b> opens the feedback panel.</span></div>';
     var go = document.createElement("button"); go.className = "go"; go.textContent = "Got it — start commenting";
     go.addEventListener("click", function () {
       try { localStorage.setItem(INTRO_KEY, "1"); } catch (e) {}
@@ -238,6 +263,64 @@
     ov.addEventListener("click", function (e) { if (e.target === ov) ov.remove(); });
     root.appendChild(ov);
   }
+
+  // ── Keyboard shortcuts ──────────────────────────────────────────────────────
+  // C = new comment, F = toggle the feedback panel. SitePing's own shortcuts (J/K/R/D/
+  // F//X/?/Esc) are bound on its shadow root and stopPropagation() the keys they consume,
+  // so they win whenever focus is inside the widget and these never double-fire. That
+  // does mean F focuses the panel's search while you're in the panel, and toggles the
+  // panel when focus is on the page — each correct in its own context.
+  // The F row sits above SitePing's own "F / — Focus search", so it says where it applies:
+  // without that, the overlay lists F twice and reads like a bug.
+  var PP_KEYS = [
+    { key: "C", label: "New comment" },
+    { key: "F", label: "Toggle feedback panel (from the page)" },
+  ];
+
+  // Add our keys to SitePing's shortcuts overlay. The overlay is rebuilt on each open, so
+  // watch the shadow root rather than injecting once; the marker attribute keeps repeat
+  // observations idempotent.
+  function ppWatchShortcuts(sroot) {
+    function fill() {
+      var grid = sroot.querySelector(".sp-shortcuts-grid");
+      if (!grid || grid.hasAttribute("data-pp-keys")) return;
+      grid.setAttribute("data-pp-keys", "");
+      for (var i = PP_KEYS.length - 1; i >= 0; i--) {
+        var row = document.createElement("div");
+        row.className = "sp-shortcuts-row";
+        var keys = document.createElement("div");
+        keys.className = "sp-shortcuts-keys";
+        var kbd = document.createElement("span");
+        kbd.className = "sp-kbd";
+        kbd.textContent = PP_KEYS[i].key;
+        keys.appendChild(kbd);
+        var desc = document.createElement("span");
+        desc.className = "sp-shortcuts-desc";
+        desc.textContent = PP_KEYS[i].label;
+        row.appendChild(keys); row.appendChild(desc);
+        grid.insertBefore(row, grid.firstChild);
+      }
+    }
+    fill();
+    new MutationObserver(fill).observe(sroot, { childList: true, subtree: true });
+  }
+
+  // Mirror SitePing's own guards: never steal a key the reviewer is typing into a field
+  // (the prototype may have its own forms), and leave modified chords alone.
+  function typingContext(ev) {
+    var t = (ev.composedPath && ev.composedPath()[0]) || ev.target;
+    if (!t) return false;
+    var tag = t.tagName && t.tagName.toLowerCase();
+    return tag === "input" || tag === "textarea" || tag === "select" || !!t.isContentEditable;
+  }
+  document.addEventListener("keydown", function (ev) {
+    if (ev.ctrlKey || ev.altKey || ev.metaKey) return;
+    if (typingContext(ev)) return;
+    if (root.querySelector(".ov")) return;  // intro modal is up; it has its own button
+    var k = (ev.key || "").toLowerCase();
+    if (k === "c") { ev.preventDefault(); onCommentClick(); }
+    else if (k === "f") { ev.preventDefault(); toggleFeedback(); }
+  });
 
   function toast(msg) {
     var t = document.createElement("div"); t.textContent = msg;
@@ -276,9 +359,17 @@
     return false;
   }
 
-  // Rasterize the visible viewport and stroke a highlight around the pinned element
-  // (located live via its cssSelector). Returns a WebP data URL, or null on any failure.
-  function capture(cssSelector) {
+  // Rasterize the visible viewport and stroke a highlight around the region the reviewer
+  // actually dragged. Returns a WebP data URL, or null on any failure.
+  //
+  // `rect` is SitePing's box for the drag, stored as fractions OF THE RESOLVED ELEMENT,
+  // not of the viewport — its So() computes xPct=(drag.x-el.x)/el.width. So we re-project
+  // it through the element's live rect to get viewport coordinates. Highlighting the
+  // element's own box instead (what this used to do) is badly wrong whenever the drag
+  // resolves to a coarse ancestor: a box drawn around one card inside <main> came back
+  // with the entire column stroked. Missing/degenerate rect → whole element, which is
+  // also what SitePing sends ({0,0,1,1}) when there was no drag.
+  function capture(cssSelector, rect) {
     return loadH2C().then(function (h2c) {
       if (!h2c) return null;
       var vw = window.innerWidth, vh = window.innerHeight;
@@ -295,11 +386,18 @@
           try {
             var r = target.getBoundingClientRect();
             if (r.width > 0 && r.height > 0) {
+              var bx = r.left, by = r.top, bw = r.width, bh = r.height;
+              if (rect && rect.wPct > 0 && rect.hPct > 0) {
+                bx = r.left + (rect.xPct || 0) * r.width;
+                by = r.top + (rect.yPct || 0) * r.height;
+                bw = rect.wPct * r.width;
+                bh = rect.hPct * r.height;
+              }
               var ctx = canvas.getContext("2d");
               ctx.lineWidth = Math.max(2, 3 * scale);
               ctx.strokeStyle = "#ff4b31";
               ctx.fillStyle = "rgba(255,75,49,0.12)";
-              var x = r.left * scale, y = r.top * scale, w = r.width * scale, h = r.height * scale;
+              var x = bx * scale, y = by * scale, w = bw * scale, h = bh * scale;
               ctx.fillRect(x, y, w, h); ctx.strokeRect(x, y, w, h);
             }
           } catch (e) {}
@@ -409,10 +507,13 @@
         var body = null;
         try { body = JSON.parse(init.body); } catch (e) { body = null; }
         if (body && body.annotations && !body.screenshot) {
-          var sel = "";
-          try { sel = (body.annotations[0] && body.annotations[0].anchor
-                       && body.annotations[0].anchor.cssSelector) || ""; } catch (e) {}
-          return capture(sel).then(function (shot) {
+          var sel = "", rect = null;
+          try {
+            var a0 = body.annotations[0];
+            sel = (a0 && a0.anchor && a0.anchor.cssSelector) || "";
+            rect = (a0 && a0.rect) || null;
+          } catch (e) {}
+          return capture(sel, rect).then(function (shot) {
             if (shot) { body.screenshot = shot; init = Object.assign({}, init, { body: JSON.stringify(body) }); }
             return _fetch(input, init);
           }).catch(function () { return _fetch(input, init); });

@@ -12,7 +12,7 @@ Arguments: a share URL, a bare UUID, or a natural reference.
 
 ```bash
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
-PP_SKILLS_VERSION=1.3.0
+PP_SKILLS_VERSION=1.3.1
 [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
 SHOTS="${XDG_CACHE_HOME:-$HOME/.cache}/protopeek/shots"
 ```
@@ -104,15 +104,26 @@ Update `last_fetched_at` for this uuid in `$CFG/prototypes.json` (atomic write).
 ## Step 7 — Print the action index
 
 After the synthesis, list every open item compactly so the user can act on it. One entry
-per annotation, id first, with the screenshot as a clickable link:
+per annotation, id first, with the screenshot as a real markdown link.
+
+**Emit the index as markdown — do NOT wrap it in a fenced code block.** A fence renders
+link syntax literally, so the URL arrives as dead text the user has to copy by hand. The
+block below is the markdown *source* to emit, shown fenced only so you can see the exact
+syntax:
 
 ```
-#47  bug     dana@corp.com   v2  1440x900  "pricing card is cramped at this width"
-     ⌖ #hero .price  →  https://protopeek.dev/s/MQ.aBcDeF.7x1p…/
+**#47** · `bug` · dana@corp.com · v2 · 1440x900
+"pricing card is cramped at this width"
+⌖ `#hero .price` · [📷 screenshot](https://protopeek.dev/s/MQ.aBcDeF.7x1p…/)
 
-#48  change  marco@corp.com  v2  390x844   "make the CTA louder"
-     ⌖ .cta  →  (no screenshot)
+**#48** · `change` · marco@corp.com · v2 · 390x844
+"make the CTA louder"
+⌖ `.cta` · no screenshot
 ```
+
+Link `screenshot.view_url`, never `screenshot.url` — the latter is Bearer-authed and 401s
+in a browser (see Step 4). When `view_url` is absent, link the local `file://` path you
+downloaded to instead, and say it's local to this machine.
 
 List resolved items separately and collapsed (`3 resolved: #31, #33, #39`) — the payload
 is cumulative, so without this the list grows forever.

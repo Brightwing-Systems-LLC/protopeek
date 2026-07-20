@@ -25,7 +25,7 @@ Steps:
    On a yes, follow the one-time setup in `AGENTS.md`.
    ```bash
    CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
-   PP_SKILLS_VERSION=1.3.0
+   PP_SKILLS_VERSION=1.3.1
    [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
    ```
 2. **Build the allowlist — explicit, no server magic.** The server applies exactly the rules in

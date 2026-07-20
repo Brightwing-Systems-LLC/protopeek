@@ -1,7 +1,7 @@
 {
   "name": "protopeek",
   "description": "Share HTML prototypes behind private, time-boxed links and pull annotated reviewer feedback back into your agent — /proto-up, /proto-status, /proto-feedback, /proto-list, /proto-delete, /proto-config.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": {
     "name": "Brightwing Systems, LLC",
     "url": "https://protopeek.dev"

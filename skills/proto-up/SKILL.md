@@ -24,7 +24,7 @@ Arguments: the first token is the path to the self-contained `.html` file. Optio
 
 ```bash
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
-PP_SKILLS_VERSION=1.3.0
+PP_SKILLS_VERSION=1.3.1
 [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
 ```
 

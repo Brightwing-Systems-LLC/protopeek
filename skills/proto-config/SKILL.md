@@ -13,7 +13,7 @@ Arguments: empty to show, `set-default <domain>` or `clear-default` to change.
 
 ```bash
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
-PP_SKILLS_VERSION=1.3.0
+PP_SKILLS_VERSION=1.3.1
 [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
 ```
 
