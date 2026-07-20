@@ -44,6 +44,10 @@ its anchor), publish to a hosting platform (public, no annotation), or stand up 
 - **Private by default** — an unguessable link plus an email allowlist, expiring in 30 days.
 - **Feedback with coordinates** — reviewers draw a box on the thing they mean; every
   comment carries a CSS selector, an element snapshot, and a screenshot of what they saw.
+- **Your agent sees the screenshot, not just the note** — `/proto-feedback` downloads each
+  shot, the reviewer's box highlighted, and the agent looks at the pixels. A vague *"this
+  competes"* is settled by the image instead of guessed from a selector — and when the
+  markup has moved on and the selector no longer resolves, the shot still carries the intent.
 - **Agent-shaped output** — feedback comes back as structured JSON your agent synthesizes
   into themes, conflicts, and an anchored change list — then edits the prototype and
   ships v2 behind the same link.

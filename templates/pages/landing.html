@@ -10,7 +10,8 @@
       <p class="sub muted">
         Host a self-contained HTML prototype behind an unguessable, time-boxed link and a
         lightweight email allowlist. Reviewers pin comments right on the page — no signup.
-        You (and Claude Code) pull a structured synthesis and iterate.
+        You (and Claude Code) pull a structured synthesis — with the screenshot each
+        reviewer saw — and iterate.
       </p>
       <p class="muted mono" style="font-size:.8rem;letter-spacing:.02em;">
         <a href="https://github.com/Brightwing-Systems-LLC/protopeek" target="_blank" rel="noopener">Open source</a>
@@ -60,6 +61,7 @@
     <div class="card"><h3>◉ Gated by design</h3><p class="muted">UUID link + email allowlist + signed identity. A leaked link self-expires.</p></div>
     <div class="card"><h3>⌖ Pin-anchored notes</h3><p class="muted">Reviewers annotate elements directly. Author stamped server-side.</p></div>
     <div class="card"><h3>↻ Agent-shaped</h3><p class="muted">Pull a synthesis — themes, conflicts, a change list — not a comment dump.</p></div>
+    <div class="card"><h3>▣ Sees what they saw</h3><p class="muted">Every pin ships the screenshot, the reviewer's box highlighted. Your agent reads the pixels, not just the selector.</p></div>
   </div>
 
   {% comment %} ── The whole loop, from a real run ──────────────────────────── {% endcomment %}
@@ -67,11 +69,11 @@
     <div class="walk-head">
       <div class="tag">The whole loop</div>
       <h2 style="font-size:1.8rem;margin:.4rem 0;">From prototype to synthesized feedback</h2>
-      <p class="muted">A real run: a <em>Tempo</em> fitness dashboard, reviewed by three people, pulled back and synthesized by the agent.</p>
+      <p class="muted">A real run: a <em>Tempo</em> pricing page, reviewed by three people, pulled back and synthesized by the agent.</p>
     </div>
 
     <figure class="shot walk-hero">
-      <img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the goal ring to leave an element-anchored comment">
+      <img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the Team plan's CTA to leave an element-anchored comment">
       <figcaption>Reviewers pin comments right on the page — every note anchored to its element and stamped to its author.</figcaption>
     </figure>
 
@@ -92,11 +94,11 @@ Ready — try /proto-up ./prototype.html in your agent</div></div>
       <div class="step__body">
         <div class="stepno">02</div><h3>Upload a prototype</h3>
         <p class="muted">Generate a self-contained HTML file, then one command uploads it and returns a private, time-boxed link.</p>
-        <div class="term"><div class="cmd">/proto-up ./tempo.html --allow example.com</div><div class="out"><span class="ok">✓</span> {{ BASE_URL }}/p/d2a6…39b8  (v1 · expires in 30 days)
+        <div class="term"><div class="cmd">/proto-up ./tempo-pricing.html --allow example.com</div><div class="out"><span class="ok">✓</span> {{ BASE_URL }}/p/d2a6…39b8  (v1 · expires in 30 days)
 viewable by: anyone @example.com · anyone @acme.com (your default)</div></div>
       </div>
       <div class="step__media">
-        <figure class="shot"><img src="{% static 'img/walkthrough/01-prototype.jpg' %}" alt="The Tempo weekly fitness-dashboard prototype">
+        <figure class="shot"><img src="{% static 'img/walkthrough/01-prototype.jpg' %}" alt="The Tempo pricing-page prototype">
           <figcaption>The self-contained prototype you upload.</figcaption></figure>
       </div>
     </div>
@@ -107,8 +109,8 @@ viewable by: anyone @example.com · anyone @acme.com (your default)</div></div>
         <p class="muted">Send the link. Reviewers enter an email once — no signup, no password — and draw a box on anything to leave a comment. It anchors to that element.</p>
       </div>
       <div class="step__media">
-        <figure class="shot"><img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the goal ring to leave a comment">
-          <figcaption>Pinning a comment on the goal ring.</figcaption></figure>
+        <figure class="shot"><img src="{% static 'img/walkthrough/02-annotate.jpg' %}" alt="A reviewer drawing a box on the Choose Team button to leave a comment">
+          <figcaption>Pinning a comment on the Team plan's CTA.</figcaption></figure>
       </div>
     </div>
 
@@ -116,10 +118,10 @@ viewable by: anyone @example.com · anyone @acme.com (your default)</div></div>
       <div class="step__body">
         <div class="stepno">04</div><h3>Pull the feedback</h3>
         <p class="muted">When comments land, your agent pulls an agent-shaped payload — every note with its type, author, and the element it targets.</p>
-        <div class="term"><div class="cmd">/proto-feedback {{ BASE_URL }}/p/d2a6…39b8</div><div class="out">3 reviewers · 4 comments · 4 new
-[change]   sam    @ #stats  "4 stat tiles compete with the ring…"
-[other]    jordan @ #ring   "Disagree with Sam — keep the stats…"
-[change]   taylor @ #cta    "'Start workout' is tiny, top-right…"</div></div>
+        <div class="term"><div class="cmd">/proto-feedback {{ BASE_URL }}/p/d2a6…39b8</div><div class="out">3 reviewers · 3 comments · 3 new
+[change]   sam    @ #plan-team  "Pro and Team both carry filled buttons…"
+[other]    jordan @ #plan-team  "Disagree — Team's dark button is how…"
+[change]   taylor @ #toggle     "Monthly/Annual toggle is too quiet…"</div></div>
       </div>
       <div class="step__media">
         <figure class="shot"><img src="{% static 'img/walkthrough/04-panel.jpg' %}" alt="The collected feedback panel showing all comments">
@@ -129,19 +131,30 @@ viewable by: anyone @example.com · anyone @acme.com (your default)</div></div>
 
     <div class="step">
       <div class="step__body">
-        <div class="stepno">05</div><h3>Discuss &amp; iterate with your agent</h3>
+        <div class="stepno">05</div><h3>Your agent sees what they saw</h3>
+        <p class="muted">Every pin carries a screenshot with the reviewer's box highlighted in orange. <span class="mono">/proto-feedback</span> downloads them and your agent looks at the pixels — so a vague note like <em>"this competes"</em> is settled by the picture, not guessed from a CSS selector.</p>
+      </div>
+      <div class="step__media">
+        <figure class="shot"><img src="{% static 'img/walkthrough/05-agent-sees.jpg' %}" alt="A saved reviewer screenshot with an orange box highlighting the Choose Team button the reviewer drew around">
+          <figcaption>The screenshot your agent reads — the reviewer's box, highlighted.</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="step reverse">
+      <div class="step__body">
+        <div class="stepno">06</div><h3>Discuss &amp; iterate with your agent</h3>
         <p class="muted">Your agent doesn't dump comments — it synthesizes: themes, who-said-what, conflicts, and a concrete change list mapped to the page. You decide; it edits and re-shares as v2.</p>
       </div>
       <div class="step__media">
         <div class="chat">
           <div class="chat__who">your agent · synthesis</div>
-          <p><strong>3 reviewers, 4 notes on v1.</strong> The core tension is <strong>visual hierarchy</strong> — what's the hero?</p>
-          <p>Sam wants the four stat tiles demoted because they compete with the 72% ring; Jordan pushes back that the stats are <em>why they open the app</em> and would rather shrink the ring. That's a real product question: is Tempo a <strong>glanceable goal</strong> or a <strong>data view</strong>? Pick one primary metric. Taylor flags two fixes below it.</p>
+          <p><strong>3 reviewers, 3 notes on v1.</strong> The core tension is <strong>CTA hierarchy</strong> — which tier are you steering people to?</p>
+          <p>Sam wants only the recommended tier to carry a filled button — Pro and Team both being loud makes them compete. Jordan pushes back that Team's dark button is <em>how enterprise buyers self-select</em>, and would keep it. That's a real product question: is the page funneling everyone to <strong>Pro</strong>, or letting big teams find <strong>Team</strong> on their own? Taylor flags a separate fix above.</p>
           <p><strong>Proposed v2:</strong></p>
           <ul>
-            <li>Commit to one hero — promote the ring <em>or</em> the stats; demote the other to a secondary row</li>
-            <li>Make <em>"Start workout"</em> the big primary CTA — high-contrast, thumb-reachable</li>
-            <li>Label the daily chart (<em>"active minutes"</em>) + add a baseline axis</li>
+            <li>Commit to one primary CTA — keep Pro solid, demote Team's button to an outline (or make Team the dark one <em>only</em> if it's the real target)</li>
+            <li>Make the Monthly/Annual toggle louder — surface the <em>−20%</em> as a visible savings pill</li>
+            <li>Point the <em>"Most popular"</em> badge at whichever tier the CTA actually favors, so flag and button agree</li>
           </ul>
           <p class="muted">Want me to make these edits and re-share as v2?</p>
         </div>
