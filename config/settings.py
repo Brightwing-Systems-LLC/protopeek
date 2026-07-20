@@ -7,6 +7,7 @@ Single monolithic settings via `environs`, reading `.env` then `.env.prod`
 runs Celery eagerly, so tests need zero infra.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -83,6 +84,9 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware",
+    # Last, so its response phase runs closest to the view and it can rewrite the
+    # JSON body before anything downstream has finalized headers.
+    "common.skills_version.SkillsVersionMiddleware",
 ]
 
 if DEBUG and not _TESTING:
@@ -224,6 +228,20 @@ if _TESTING:
 REVIEWER_COOKIE_NAME = "protopeek_reviewer"
 REVIEWER_COOKIE_MAX_AGE = env.int("REVIEWER_COOKIE_MAX_AGE", 60 * 60 * 24 * 90)
 REVIEWER_COOKIE_SALT = "protopeek.reviewer.identity"
+
+# ── Skill version negotiation ────────────────────────────────────────────────
+# Read from the plugin manifest rather than duplicated here: that file is already
+# bumped as part of shipping a skill change, so there is no second place to forget.
+# Env override exists for staging a version the repo hasn't caught up to yet.
+def _plugin_version() -> str:
+    try:
+        with open(BASE_DIR / ".claude-plugin" / "plugin.json") as fh:
+            return str(json.load(fh).get("version") or "") or "0.0.0"
+    except (OSError, ValueError, TypeError):
+        return "0.0.0"
+
+
+SKILLS_LATEST_VERSION = env.str("SKILLS_LATEST_VERSION", "") or _plugin_version()
 
 # ── Screenshot view links (signed, time-boxed, no auth) ──────────────────────
 # The API's shot endpoint is Bearer-authed, so it 401s in a browser. These links

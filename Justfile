@@ -44,6 +44,22 @@ dbshell:
 check:
     uv run python manage.py check --deploy
 
+# Every skill declares its own version to the API; drift means users get told they
+# are stale when they are not (or worse, not told when they are).
+check-skill-versions:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    want=$(python3 -c "import json;print(json.load(open('.claude-plugin/plugin.json'))['version'])")
+    fail=0
+    for f in skills/*/SKILL.md .claude/commands/proto-up.md; do
+      got=$(grep -m1 -oE 'PP_SKILLS_VERSION=[0-9.]+' "$f" | cut -d= -f2 || true)
+      if [ "$got" != "$want" ]; then echo "  $f declares '${got:-none}', manifest says '$want'"; fail=1; fi
+    done
+    mkt=$(python3 -c "import json;print(json.load(open('.claude-plugin/marketplace.json'))['metadata']['version'])")
+    if [ "$mkt" != "$want" ]; then echo "  marketplace.json says '$mkt', plugin.json says '$want'"; fail=1; fi
+    if [ "$fail" = 1 ]; then echo "skill version drift"; exit 1; fi
+    echo "skill versions all at $want"
+
 collect:
     uv run python manage.py collectstatic --noinput --ignore=src
 

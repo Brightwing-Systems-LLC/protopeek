@@ -195,6 +195,17 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 | `DELETE` | `/api/prototypes/{uuid}/annotations/{id}` | permanently delete one pin — its screenshot and reply thread go with it (204 on success) |
 | `POST` | `/api/prototypes/{uuid}/access` | add/remove allowlist domains & emails |
 
+**Skill version negotiation.** Send `X-ProtoPeek-Skills: <version>` on any call and every
+`/api/` response answers with `skills: {client, latest, status}` in the body, plus
+`X-ProtoPeek-Skills-Status` and `-Latest` headers (the only channel on array and binary
+responses). `status` is `current`, `update-available`, `update-required`, or `unknown`
+(a client too old to report its own version). `latest` is read from
+`.claude-plugin/plugin.json`, so shipping a skill change bumps it automatically; the
+`SKILLS_MIN_SUPPORTED` constance knob escalates a release to `update-required` without a
+deploy. The payload is deliberately inert — a version and an enum, never a command — so a
+spoofed response can't put shell in front of an agent. `just check-skill-versions` fails
+the build if the six skills and the manifest disagree.
+
 The feedback payload per annotation: `id`, `type` (question/change/bug/other), `note`,
 `author`, `version`, `resolved`, `css_selector`, `element_snapshot`, a `thread[]` of
 replies, and `screenshot` (`null` or `{url, width, height}`).

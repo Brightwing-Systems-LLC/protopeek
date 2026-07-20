@@ -23,6 +23,11 @@ CONSTANCE_CONFIG = {
         "Inject the SitePing annotation overlay into served prototypes.",
         bool,
     ),
+    "SKILLS_MIN_SUPPORTED": (
+        "",
+        "Oldest skill version that still works correctly (blank = none). Callers below this are told the update is REQUIRED rather than merely available, which is the one case an agent should interrupt the user about. Set it when a release actually breaks older skills.",
+        str,
+    ),
     "TOKEN_MINT_LIMIT": (
         10,
         "Max tokens that can be minted per IP per window (anti-abuse).",
@@ -38,5 +43,6 @@ CONSTANCE_CONFIG = {
 CONSTANCE_CONFIG_FIELDSETS = {
     "Sharing": ("DEFAULT_ALLOW_DOMAIN",),
     "Reviewer access": ("ENTER_RATE_LIMIT", "ENTER_RATE_WINDOW", "OVERLAY_ENABLED"),
+    "Skills": ("SKILLS_MIN_SUPPORTED",),
     "Abuse": ("TOKEN_MINT_LIMIT", "TOKEN_MINT_WINDOW"),
 }
