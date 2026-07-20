@@ -294,3 +294,183 @@ def test_shot_is_scoped_to_owner(prototype, device_token):
         **_auth(other_token),
     )
     assert r.status_code == 404
+
+
+# ── Capture context delivered to the agent ───────────────────────────────────
+def _post_anchored(client, prototype, client_id="anch1"):
+    """A pin carrying the full anchor blob SitePing actually sends."""
+    return client.post(
+        "/api/widget",
+        data=json.dumps(
+            {
+                "projectName": str(prototype.uuid),
+                "type": "change",
+                "message": "cramped",
+                "clientId": client_id,
+                "viewport": "390x844",
+                "url": "/p/x/raw/#/pricing",
+                "annotations": [
+                    {
+                        "anchor": {
+                            "cssSelector": "#hero .price",
+                            "xpath": "/html/body/h1",
+                            "textSnippet": "Pricing",
+                            "elementTag": "H1",
+                            "textPrefix": "before",
+                            "textSuffix": "after",
+                            "neighborText": "nearby",
+                        },
+                        "rect": {"xPct": 0.1, "yPct": 0.2, "wPct": 0.5, "hPct": 0.3},
+                        "scrollX": 0,
+                        "scrollY": 640,
+                        "viewportW": 390,
+                        "viewportH": 844,
+                    }
+                ],
+            }
+        ),
+        content_type="application/json",
+    )
+
+
+def test_feedback_exposes_capture_context(prototype, device_token):
+    """The viewport-only screenshot can't show where on the page a pin sits, or what
+    width the reviewer was at — so rect/scroll/viewport/url have to ride along."""
+    c = Client()
+    _enter(c, prototype)
+    assert _post_anchored(c, prototype).status_code == 201
+
+    api = Client()
+    ann = api.get(
+        f"/api/prototypes/{prototype.uuid}/feedback", **_auth(device_token)
+    ).json()["annotations"][0]
+
+    assert ann["viewport"] == "390x844"
+    assert ann["url"] == "/p/x/raw/#/pricing"
+    assert ann["css_selector"] == "#hero .price"  # unchanged, still the primary handle
+    anchor = ann["anchor"]
+    assert anchor["xpath"] == "/html/body/h1"
+    assert anchor["element_tag"] == "H1"
+    assert anchor["neighbor_text"] == "nearby"
+    assert (anchor["text_prefix"], anchor["text_suffix"]) == ("before", "after")
+    assert anchor["rect"] == {"xPct": 0.1, "yPct": 0.2, "wPct": 0.5, "hPct": 0.3}
+    assert anchor["scroll"] == {"x": 0, "y": 640}
+
+
+def test_feedback_survives_missing_anchors(prototype, device_token):
+    """A pin with no anchors at all (widget sent none) must not blow up the payload."""
+    c = Client()
+    _enter(c, prototype)
+    c.post(
+        "/api/widget",
+        data=json.dumps(
+            {
+                "projectName": str(prototype.uuid),
+                "type": "other",
+                "message": "general note",
+                "clientId": "bare",
+                "annotations": [],
+            }
+        ),
+        content_type="application/json",
+    )
+    api = Client()
+    ann = api.get(
+        f"/api/prototypes/{prototype.uuid}/feedback", **_auth(device_token)
+    ).json()["annotations"][0]
+    assert ann["anchor"]["rect"] is None
+    assert ann["anchor"]["scroll"] is None
+    assert ann["anchor"]["xpath"] == ""
+
+
+# ── Owner-side resolve / delete (the /proto-feedback action loop) ─────────────
+@pytest.fixture
+def annotation(prototype):
+    c = Client()
+    _enter(c, prototype)
+    _post_with_shot(c, prototype, _png_data_url())
+    return Annotation.objects.get()
+
+
+def _patch(client, prototype, ann_id, body, token):
+    return client.patch(
+        f"/api/prototypes/{prototype.uuid}/annotations/{ann_id}",
+        data=json.dumps(body),
+        content_type="application/json",
+        **_auth(token),
+    )
+
+
+def test_owner_resolves_and_reopens_annotation(prototype, annotation, device_token):
+    api = Client()
+    r = _patch(api, prototype, annotation.id, {"resolved": True}, device_token)
+    assert r.status_code == 200
+    assert r.json()["resolved"] is True
+    annotation.refresh_from_db()
+    assert annotation.resolved and annotation.resolved_at is not None
+
+    r2 = _patch(api, prototype, annotation.id, {"resolved": False}, device_token)
+    assert r2.json()["resolved"] is False
+    annotation.refresh_from_db()
+    assert not annotation.resolved and annotation.resolved_at is None
+
+
+def test_resolved_state_is_visible_to_reviewers(prototype, annotation, device_token):
+    """Resolving is outward-facing — the widget's list reflects it, which is what drives
+    the reviewer's Open/Resolved counters and their Reopen button."""
+    _patch(Client(), prototype, annotation.id, {"resolved": True}, device_token)
+    c = Client()
+    _enter(c, prototype)
+    body = c.get(f"/api/widget?projectName={prototype.uuid}").json()
+    assert body["feedbacks"][0]["status"] == "resolved"
+    assert body["feedbacks"][0]["resolvedAt"] is not None
+
+
+def test_owner_deletes_annotation_with_shot_and_thread(
+    prototype, annotation, device_token
+):
+    from feedback.models import AnnotationShot, Comment
+
+    Comment.objects.create(
+        annotation=annotation, author_email="sam@example.com", body="agreed"
+    )
+    assert AnnotationShot.objects.count() == 1
+
+    api = Client()
+    r = api.delete(
+        f"/api/prototypes/{prototype.uuid}/annotations/{annotation.id}",
+        **_auth(device_token),
+    )
+    assert r.status_code == 204
+    assert Annotation.objects.count() == 0
+    assert AnnotationShot.objects.count() == 0  # cascaded
+    assert Comment.objects.count() == 0  # cascaded
+
+
+def test_resolve_and_delete_are_scoped_to_owner(prototype, annotation):
+    """The mutating verbs get the same cross-owner scoping as the shot endpoint."""
+    other = User.objects.create_user(email="intruder2@x.com", password="x")
+    other_token = DeviceToken.objects.create(owner=other, label="t")
+    api = Client()
+
+    patched = _patch(api, prototype, annotation.id, {"resolved": True}, other_token)
+    deleted = api.delete(
+        f"/api/prototypes/{prototype.uuid}/annotations/{annotation.id}",
+        **_auth(other_token),
+    )
+    assert patched.status_code == 404
+    assert deleted.status_code == 404
+
+    annotation.refresh_from_db()
+    assert not annotation.resolved
+    assert Annotation.objects.count() == 1
+
+
+def test_annotation_verbs_require_a_token(prototype, annotation):
+    api = Client()
+    r = api.patch(
+        f"/api/prototypes/{prototype.uuid}/annotations/{annotation.id}",
+        data=json.dumps({"resolved": True}),
+        content_type="application/json",
+    )
+    assert r.status_code == 401

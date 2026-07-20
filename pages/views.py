@@ -59,6 +59,10 @@ offer placeholders first. No need to re-ask on an update or a re-share already a
 - list:     GET  /api/prototypes                              (includes total_comments / has_new hints)
 - status:   GET  /api/prototypes/<uuid>/status                (read-only)
 - feedback: GET  /api/prototypes/<uuid>/feedback[?since=<ts>]   (advances the watermark)
+- resolve:  PATCH /api/prototypes/<uuid>/annotations/<id>  '{"resolved":true|false}'
+            (reviewers SEE this — resolve once the fix is live, not when you start it)
+- unpin:    DELETE /api/prototypes/<uuid>/annotations/<id>   (PERMANENT — the pin, its
+            screenshot and its whole reply thread; confirm first, resolve is reversible)
 - edit:     PATCH /api/prototypes/<uuid>  '{"name":"...","is_active":true|false}'  (rename / deactivate / reactivate)
 - delete:   DELETE /api/prototypes/<uuid>   (PERMANENT — link, versions, all feedback; confirm with the user first)
 - me:       GET  /api/me

@@ -147,7 +147,7 @@ one at any time.
 |---|---|---|
 | `/proto-up <file> [--name] [--allow] [--private] [--new] [--update]` | Upload a prototype and state who can view it; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run) and before the first upload of a file |
 | `/proto-status <ref>` | Activity counts: reviewers, comments, **new since last pull** | None — read-only, safe to repeat |
-| `/proto-feedback <ref>` | Pulls annotations + threads + screenshots, synthesizes themes/conflicts/changes | Advances the new-since watermark |
+| `/proto-feedback <ref>` | Pulls annotations + threads + screenshots, synthesizes themes/conflicts/changes, then indexes every item by id so you can say "resolve 47" or "delete 47" | Advances the new-since watermark; resolving is visible to reviewers |
 | `/proto-list` | Every prototype your token owns, with live/expired status, new-feedback hints, and links | Reconciles the local prototype log |
 | `/proto-delete <ref>` | Permanently deletes one — link, every version, all feedback | Irreversible; always confirms first (offers reversible deactivation instead) |
 | `/proto-config [set-default <domain>]` | Shows your setup — token status, default reviewer domain, prototype log — or changes the default | Writes only the local config file |
@@ -190,6 +190,8 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 | `GET` | `/api/prototypes/{uuid}/status` | activity counts — does **not** advance the watermark |
 | `GET` | `/api/prototypes/{uuid}/feedback[?since=ts]` | full agent-shaped payload — **advances** the watermark |
 | `GET` | `/api/prototypes/{uuid}/annotations/{id}/shot` | reviewer screenshot (WebP; ETag = sha256) |
+| `PATCH` | `/api/prototypes/{uuid}/annotations/{id}` | `{"resolved": true\|false}` — mark one reviewer pin addressed, or reopen it. Visible to reviewers in the overlay |
+| `DELETE` | `/api/prototypes/{uuid}/annotations/{id}` | permanently delete one pin — its screenshot and reply thread go with it (204 on success) |
 | `POST` | `/api/prototypes/{uuid}/access` | add/remove allowlist domains & emails |
 
 The feedback payload per annotation: `id`, `type` (question/change/bug/other), `note`,

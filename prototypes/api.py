@@ -65,6 +65,10 @@ class PrototypePatch(Schema):
     is_active: bool | None = None
 
 
+class AnnotationPatch(Schema):
+    resolved: bool | None = None
+
+
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _split(raw: str) -> list[str]:
     return [p.strip() for p in (raw or "").replace("\n", ",").split(",") if p.strip()]
@@ -303,6 +307,85 @@ def status(request, uuid: str):
     }
 
 
+def _anchor_detail(a: Annotation) -> dict:
+    """The positional context SitePing captured, lifted out of the raw `anchors` blob.
+    The screenshot is viewport-only, so rect/scroll are what say where the pin actually
+    sits on the page and how far down the reviewer was. The secondary anchor fields are
+    the fallbacks for when css_selector has gone stale — annotations pin to the version
+    they were left on, so a pull can carry v1 pins whose selectors no longer resolve."""
+    entries = a.anchors if isinstance(a.anchors, list) else []
+    entry = entries[0] if entries and isinstance(entries[0], dict) else {}
+    anchor = entry.get("anchor") or {}
+    rect = entry.get("rect") or {}
+    return {
+        "xpath": anchor.get("xpath", ""),
+        "element_tag": anchor.get("elementTag", ""),
+        "element_id": anchor.get("elementId"),
+        "text_prefix": anchor.get("textPrefix", ""),
+        "text_suffix": anchor.get("textSuffix", ""),
+        "neighbor_text": anchor.get("neighborText", ""),
+        "rect": (
+            {k: rect.get(k) for k in ("xPct", "yPct", "wPct", "hPct")} if rect else None
+        ),
+        "scroll": (
+            {"x": entry.get("scrollX"), "y": entry.get("scrollY")} if entry else None
+        ),
+    }
+
+
+def _annotation_payload(a: Annotation, p: Prototype) -> dict:
+    shot = getattr(a, "shot", None)
+    return {
+        "id": a.id,
+        "css_selector": a.css_selector,
+        "element_snapshot": a.element_snapshot,
+        "note": a.note,
+        "type": a.feedback_type,
+        "author": a.author_email,
+        "version": a.version.version_number,
+        "resolved": a.resolved,
+        "created_at": a.created_at.isoformat(),
+        # What the reviewer was actually looking at. "This feels cramped" at 390x844 is
+        # a different bug from the same words at 1440x900, and url pins which screen
+        # they were on when the prototype routes by hash/pushState.
+        "viewport": a.viewport,
+        "url": a.url,
+        "anchor": _anchor_detail(a),
+        "screenshot": (
+            {
+                "url": f"{settings.BASE_URL}/api/prototypes/{p.uuid}"
+                f"/annotations/{a.id}/shot",
+                "width": shot.width,
+                "height": shot.height,
+            }
+            if shot
+            else None
+        ),
+        "thread": [
+            {
+                "author": c.author_email,
+                "body": c.body,
+                "at": c.created_at.isoformat(),
+            }
+            for c in a.comments.all()
+        ],
+    }
+
+
+def _owned_annotation(request, uuid: str, ann_id: int):
+    """Resolve an annotation through its owner's prototype, so annotation ids can't be
+    walked across owners — same scoping the shot endpoint uses."""
+    p = get_object_or_404(Prototype, uuid=uuid, owner=request.auth)
+    a = get_object_or_404(
+        Annotation.objects.select_related("version", "shot").prefetch_related(
+            "comments"
+        ),
+        id=ann_id,
+        version__prototype=p,
+    )
+    return p, a
+
+
 @router.get("/{uuid}/feedback")
 def feedback(request, uuid: str, since: datetime | None = None):
     """Agent-shaped feedback synthesis input. Advances the per-prototype watermark."""
@@ -315,40 +398,7 @@ def feedback(request, uuid: str, since: datetime | None = None):
         .select_related("version", "shot")
         .prefetch_related("comments")
     )
-    payload_annotations = []
-    for a in annotations:
-        shot = getattr(a, "shot", None)
-        payload_annotations.append(
-            {
-                "id": a.id,
-                "css_selector": a.css_selector,
-                "element_snapshot": a.element_snapshot,
-                "note": a.note,
-                "type": a.feedback_type,
-                "author": a.author_email,
-                "version": a.version.version_number,
-                "resolved": a.resolved,
-                "created_at": a.created_at.isoformat(),
-                "screenshot": (
-                    {
-                        "url": f"{settings.BASE_URL}/api/prototypes/{p.uuid}"
-                        f"/annotations/{a.id}/shot",
-                        "width": shot.width,
-                        "height": shot.height,
-                    }
-                    if shot
-                    else None
-                ),
-                "thread": [
-                    {
-                        "author": c.author_email,
-                        "body": c.body,
-                        "at": c.created_at.isoformat(),
-                    }
-                    for c in a.comments.all()
-                ],
-            }
-        )
+    payload_annotations = [_annotation_payload(a, p) for a in annotations]
 
     # Advance the watermark now that this pull has been served.
     p.last_fetched_at = timezone.now()
@@ -363,6 +413,31 @@ def feedback(request, uuid: str, since: datetime | None = None):
         "status": status,
         "annotations": payload_annotations,
     }
+
+
+@router.patch("/{uuid}/annotations/{ann_id}")
+def edit_annotation(request, uuid: str, ann_id: int, payload: AnnotationPatch):
+    """Mark a reviewer's pin resolved, or reopen it. This is visible to reviewers: the
+    widget keeps the marker but flips its status pill and its Open/Resolved counters,
+    and offers them a Reopen button. Prefer resolving once the fix is actually live —
+    resolved reads as 'addressed', not 'acknowledged'."""
+    p, a = _owned_annotation(request, uuid, ann_id)
+    if payload.resolved is not None:
+        a.resolved = payload.resolved
+        a.resolved_at = timezone.now() if payload.resolved else None
+        a.save(update_fields=["resolved", "resolved_at"])
+    return _annotation_payload(a, p)
+
+
+@router.delete("/{uuid}/annotations/{ann_id}", response={204: None})
+def delete_annotation(request, uuid: str, ann_id: int):
+    """Hard delete one pin — its screenshot and its whole reply thread go with it (FK
+    cascade). Unlike the reviewer-facing widget DELETE, which is scoped to the author's
+    own feedback, the owner may remove any pin on their prototype. Irreversible, so
+    clients confirm first; resolving is the reversible option."""
+    _, a = _owned_annotation(request, uuid, ann_id)
+    a.delete()
+    return Status(204, None)
 
 
 @router.get("/{uuid}/annotations/{ann_id}/shot")
