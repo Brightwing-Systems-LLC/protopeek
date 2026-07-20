@@ -14,4 +14,7 @@ urlpatterns = [
     path("p/<uuid:uuid>/enter/", views.enter, name="enter"),
     path("p/<uuid:uuid>/raw/", views.raw, name="raw"),
     path("whoami/", views.whoami, name="whoami"),
+    # Signed, time-boxed screenshot link — browser-openable, unlike the API's
+    # Bearer-authed /shot endpoint.
+    path("s/<str:token>/", views.shot_link, name="shot_link"),
 ]

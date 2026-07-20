@@ -59,6 +59,9 @@ offer placeholders first. No need to re-ask on an update or a re-share already a
 - list:     GET  /api/prototypes                              (includes total_comments / has_new hints)
 - status:   GET  /api/prototypes/<uuid>/status                (read-only)
 - feedback: GET  /api/prototypes/<uuid>/feedback[?since=<ts>]   (advances the watermark)
+            (each annotation has a stable `id` — show it, never renumber positionally;
+            `viewport`/`url`/`anchor.rect` say what the reviewer saw and where; a
+            screenshot's `view_url` is signed and opens in a browser, `url` needs Bearer)
 - resolve:  PATCH /api/prototypes/<uuid>/annotations/<id>  '{"resolved":true|false}'
             (reviewers SEE this — resolve once the fix is live, not when you start it)
 - unpin:    DELETE /api/prototypes/<uuid>/annotations/<id>   (PERMANENT — the pin, its

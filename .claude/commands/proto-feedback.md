@@ -31,7 +31,7 @@ Steps:
    - `css_selector`, `element_snapshot` — primary handle on the pinned element
    - `anchor` — `xpath`, `element_tag`, `element_id`, `text_prefix`, `text_suffix`,
      `neighbor_text`, plus `rect` (`xPct`/`yPct`/`wPct`/`hPct`) and `scroll` (`x`/`y`)
-   - `screenshot` — `null`, or `{url, width, height}`
+   - `screenshot` — `null`, or `{url, view_url, width, height}`
 
    Use `viewport` before calling anything a bug — "cramped" at 390x844 and at 1440x900
    are different problems. Use `rect`/`scroll` to place a pin the shot can't show (it's
@@ -47,11 +47,12 @@ Steps:
    curl -s "<shot_url>" -H "Authorization: Bearer $PROTOPEEK_TOKEN" \
      -o "$SHOTS/<uuid>/<id>.webp"
    ```
-   Note each absolute path — you print it as a `file://` link in step 7. The payload's
-   `screenshot.url` is Bearer-authed and 401s in a browser, so never hand the user that
-   one. Skip ids whose file you already have this session (the payload is cumulative).
-   A null `screenshot` just means none was captured — fall back to `css_selector` +
-   `element_snapshot` + `anchor`.
+   The three URLs are not interchangeable: print **`screenshot.view_url`** (signed,
+   time-boxed, opens in any browser, shareable); `screenshot.url` is Bearer-authed and
+   401s in a browser, so never hand the user that one; the local `file://` path is the
+   fallback when `view_url` is absent (older or self-hosted server). Skip ids whose file
+   you already have this session (the payload is cumulative). A null `screenshot` just
+   means none was captured — fall back to `css_selector` + `element_snapshot` + `anchor`.
 5. **Advance `last_fetched_at`** for this uuid in `$CFG/prototypes.json` (atomic write).
 6. Produce a synthesis, not a transcript:
    - **Themes** — group annotations by what they're really about (e.g. "pricing clarity",
@@ -68,7 +69,7 @@ Steps:
    clickable `file://` link:
    ```
    #47  bug     dana@corp.com   v2  1440x900  "pricing card is cramped at this width"
-        ⌖ #hero .price  →  file:///Users/you/.cache/protopeek/shots/<uuid>/47.webp
+        ⌖ #hero .price  →  https://protopeek.dev/s/MQ.aBcDeF.7x1p…/
 
    #48  change  marco@corp.com  v2  390x844   "make the CTA louder"
         ⌖ .cta  →  (no screenshot)

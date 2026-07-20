@@ -189,7 +189,8 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 | `DELETE` | `/api/prototypes/{uuid}` | permanently delete — the link, every version's HTML, all feedback and screenshots (204 on success) |
 | `GET` | `/api/prototypes/{uuid}/status` | activity counts — does **not** advance the watermark |
 | `GET` | `/api/prototypes/{uuid}/feedback[?since=ts]` | full agent-shaped payload — **advances** the watermark |
-| `GET` | `/api/prototypes/{uuid}/annotations/{id}/shot` | reviewer screenshot (WebP; ETag = sha256) |
+| `GET` | `/api/prototypes/{uuid}/annotations/{id}/shot` | reviewer screenshot (WebP; ETag = sha256) — Bearer-authed, so `curl` only |
+| `GET` | `/s/{signed}` | the same screenshot from a signed, time-boxed link (`SHOT_LINK_MAX_AGE`, default 7 days) — no auth, so it opens in a browser. Handed to you as `screenshot.view_url` |
 | `PATCH` | `/api/prototypes/{uuid}/annotations/{id}` | `{"resolved": true\|false}` — mark one reviewer pin addressed, or reopen it. Visible to reviewers in the overlay |
 | `DELETE` | `/api/prototypes/{uuid}/annotations/{id}` | permanently delete one pin — its screenshot and reply thread go with it (204 on success) |
 | `POST` | `/api/prototypes/{uuid}/access` | add/remove allowlist domains & emails |

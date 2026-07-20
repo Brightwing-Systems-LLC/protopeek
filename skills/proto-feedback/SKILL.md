@@ -48,7 +48,7 @@ The payload has `prototype`, `status`, and `annotations[]`. Each annotation carr
 - `css_selector`, `element_snapshot` — the primary handle on the pinned element
 - `anchor` — `xpath`, `element_tag`, `element_id`, `text_prefix`, `text_suffix`,
   `neighbor_text`, plus `rect` (`xPct`/`yPct`/`wPct`/`hPct`) and `scroll` (`x`/`y`)
-- `screenshot` — `null`, or `{url, width, height}`
+- `screenshot` — `null`, or `{url, view_url, width, height}`
 
 Use `viewport` before calling anything a bug: "this feels cramped" at 390x844 and at
 1440x900 are different problems. Use `rect`/`scroll` to place a pin the screenshot can't
@@ -69,9 +69,15 @@ curl -s "<shot_url>" -H "Authorization: Bearer $PROTOPEEK_TOKEN" \
   -o "$SHOTS/<uuid>/<id>.webp"
 ```
 
-Note the resulting absolute path for each id — you'll print it as a `file://` link in
-Step 7 so the user can click it or paste it into a browser. (The `screenshot.url` from
-the payload is Bearer-authed and will 401 in a browser — never hand the user that one.)
+**Which link to show the user** — the payload's three URLs are not interchangeable:
+
+- `screenshot.view_url` — signed and time-boxed (7 days). Opens in any browser and can
+  be handed to a teammate. **This is the one to print.**
+- `screenshot.url` — Bearer-authed. For `curl` only; it 401s in a browser. Never hand
+  the user this one.
+- the local `file://` path you just downloaded to — the fallback when `view_url` is
+  absent (an older or self-hosted server). Works offline, but it's a local copy on this
+  machine only.
 
 Skip ids whose file you already have this session (the payload is cumulative — every pull
 returns all annotations). Screenshots are best-effort: a null `screenshot` just means none
@@ -97,11 +103,11 @@ Update `last_fetched_at` for this uuid in `$CFG/prototypes.json` (atomic write).
 ## Step 7 — Print the action index
 
 After the synthesis, list every open item compactly so the user can act on it. One entry
-per annotation, id first, with the screenshot as a clickable `file://` link:
+per annotation, id first, with the screenshot as a clickable link:
 
 ```
 #47  bug     dana@corp.com   v2  1440x900  "pricing card is cramped at this width"
-     ⌖ #hero .price  →  file:///Users/you/.cache/protopeek/shots/<uuid>/47.webp
+     ⌖ #hero .price  →  https://protopeek.dev/s/MQ.aBcDeF.7x1p…/
 
 #48  change  marco@corp.com  v2  390x844   "make the CTA louder"
      ⌖ .cta  →  (no screenshot)

@@ -225,6 +225,14 @@ REVIEWER_COOKIE_NAME = "protopeek_reviewer"
 REVIEWER_COOKIE_MAX_AGE = env.int("REVIEWER_COOKIE_MAX_AGE", 60 * 60 * 24 * 90)
 REVIEWER_COOKIE_SALT = "protopeek.reviewer.identity"
 
+# ── Screenshot view links (signed, time-boxed, no auth) ──────────────────────
+# The API's shot endpoint is Bearer-authed, so it 401s in a browser. These links
+# let an owner actually open (or hand off) one screenshot: unguessable and
+# expiring, the same shape as the prototype links themselves. Scoped to a single
+# image — never the prototype, never the feedback.
+SHOT_LINK_MAX_AGE = env.int("SHOT_LINK_MAX_AGE", 60 * 60 * 24 * 7)
+SHOT_LINK_SALT = "protopeek.annotation.shot"
+
 # ── Runtime config (django-constance behind the siteconfig app) ──────────────
 CONSTANCE_BACKEND = "constance.backends.database.DatabaseBackend"
 CONSTANCE_DATABASE_CACHE_BACKEND = None if _TESTING else "default"

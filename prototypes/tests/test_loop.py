@@ -6,7 +6,7 @@ import json
 from datetime import timedelta
 
 import pytest
-from django.test import Client
+from django.test import Client, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
@@ -464,6 +464,67 @@ def test_resolve_and_delete_are_scoped_to_owner(prototype, annotation):
     annotation.refresh_from_db()
     assert not annotation.resolved
     assert Annotation.objects.count() == 1
+
+
+# ── Signed screenshot links (browser-openable, no auth) ──────────────────────
+def test_shot_view_url_opens_without_auth(prototype, annotation, device_token):
+    """The whole point: paste it into a browser and see the image. No Bearer, no
+    cookie — and the Bearer-authed sibling still 401s, which is why this exists."""
+    from feedback.models import AnnotationShot
+
+    api = Client()
+    shot_field = api.get(
+        f"/api/prototypes/{prototype.uuid}/feedback", **_auth(device_token)
+    ).json()["annotations"][0]["screenshot"]
+
+    anon = Client()
+    assert anon.get(shot_field["url"]).status_code == 401  # the authed one
+    r = anon.get(shot_field["view_url"])  # the signed one
+    assert r.status_code == 200
+    assert r.headers["Content-Type"] == "image/webp"
+    assert r.headers["X-Robots-Tag"] == "noindex, nofollow"
+    assert r.content == bytes(AnnotationShot.objects.get().image)
+
+
+def test_shot_link_rejects_forged_and_expired_tokens(prototype, annotation):
+    from prototypes.shotlinks import sign_shot
+
+    anon = Client()
+    good = sign_shot(annotation.id)
+    assert anon.get(f"/s/{good}/").status_code == 200
+
+    # Editing the payload to point at another annotation breaks the signature.
+    assert anon.get(f"/s/{good[:-4]}xxxx/").status_code == 404
+    assert anon.get("/s/notatoken/").status_code == 404
+
+    # Aged past SHOT_LINK_MAX_AGE → 410, distinguishable from a forgery so the
+    # user is told "expired" rather than staring at a bare 404.
+    with override_settings(SHOT_LINK_MAX_AGE=-1):
+        assert anon.get(f"/s/{good}/").status_code == 410
+
+
+def test_shot_link_is_scoped_to_one_image(prototype, annotation):
+    """A link for one annotation must not serve another's screenshot."""
+    from prototypes.shotlinks import sign_shot
+
+    c = Client()
+    _enter(c, prototype)
+    _post_with_shot(c, prototype, _png_data_url(color=(10, 200, 10)), "second")
+    other = Annotation.objects.exclude(id=annotation.id).get()
+
+    anon = Client()
+    first = anon.get(f"/s/{sign_shot(annotation.id)}/").content
+    second = anon.get(f"/s/{sign_shot(other.id)}/").content
+    assert first != second
+    assert second == bytes(other.shot.image)
+
+
+def test_shot_link_404s_once_the_annotation_is_gone(prototype, annotation):
+    from prototypes.shotlinks import sign_shot
+
+    token = sign_shot(annotation.id)
+    annotation.delete()
+    assert Client().get(f"/s/{token}/").status_code == 404
 
 
 def test_annotation_verbs_require_a_token(prototype, annotation):

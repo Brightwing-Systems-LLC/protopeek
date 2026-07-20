@@ -15,6 +15,7 @@ from feedback.models import Annotation, AnnotationShot, Comment
 
 from .allowlist import normalize_email
 from .models import AccessRule, Prototype, PrototypeVersion
+from .shotlinks import shot_view_url
 
 router = Router()
 
@@ -353,8 +354,11 @@ def _annotation_payload(a: Annotation, p: Prototype) -> dict:
         "anchor": _anchor_detail(a),
         "screenshot": (
             {
+                # `url` is Bearer-authed (curl it); `view_url` is signed and
+                # time-boxed, so it opens in a browser and can be handed to someone.
                 "url": f"{settings.BASE_URL}/api/prototypes/{p.uuid}"
                 f"/annotations/{a.id}/shot",
+                "view_url": shot_view_url(a.id),
                 "width": shot.width,
                 "height": shot.height,
             }

@@ -4,8 +4,14 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.core import signing
 from django.core.cache import cache
-from django.http import HttpResponse, JsonResponse
+from django.http import (
+    Http404,
+    HttpResponse,
+    HttpResponseNotModified,
+    JsonResponse,
+)
 from django.shortcuts import get_object_or_404, redirect, render
 from django.templatetags.static import static
 from django.utils import timezone
@@ -13,12 +19,13 @@ from django.views.decorators.clickjacking import xframe_options_sameorigin
 from django.views.decorators.http import require_http_methods
 
 from accounts.models import DeviceToken
-from feedback.models import Annotation
+from feedback.models import Annotation, AnnotationShot
 from siteconfig import conf
 
 from .allowlist import is_allowed, normalize_email
 from .identity import read_identity, set_identity
 from .models import AccessRule, Prototype, PrototypeVersion
+from .shotlinks import unsign_shot
 
 
 # ── Owner dashboard ──────────────────────────────────────────────────────────
@@ -318,3 +325,26 @@ def _inject_chrome(html: str, prototype, email: str) -> str:
 def whoami(request):
     """Current reviewer identity for the UI (cookie stays HttpOnly)."""
     return JsonResponse({"email": read_identity(request)})
+
+
+def shot_link(request, token):
+    """Serve one reviewer screenshot from a signed link — no token, no cookie, so it
+    opens in a browser (which the Bearer-authed API endpoint cannot). See shotlinks."""
+    try:
+        annotation_id = unsign_shot(token)
+    except signing.SignatureExpired:
+        return HttpResponse("This screenshot link has expired.", status=410)
+    except signing.BadSignature:
+        raise Http404("bad shot link")
+    shot = get_object_or_404(AnnotationShot, annotation_id=annotation_id)
+    if request.headers.get("If-None-Match") == shot.sha256:
+        return HttpResponseNotModified()
+    return HttpResponse(
+        bytes(shot.image),
+        content_type=shot.content_type,
+        headers={
+            "ETag": shot.sha256,
+            "Cache-Control": "private, max-age=300",
+            "X-Robots-Tag": "noindex, nofollow",
+        },
+    )
