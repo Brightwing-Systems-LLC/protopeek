@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint
+        run: uv run ruff check .
+
+      - name: Install just
+        uses: extractions/setup-just@v2
+
+      # Fails the build if the skills and the plugin/marketplace manifests disagree.
+      - name: Skill version drift
+        run: just check-skill-versions
+
+      # Fast suite — in-memory SQLite + locmem, no Postgres/Redis needed.
+      - name: Tests
+        run: uv run pytest -m "not e2e"

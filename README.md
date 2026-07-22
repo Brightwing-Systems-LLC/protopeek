@@ -42,6 +42,8 @@ its anchor), publish to a hosting platform (public, no annotation), or stand up 
 (heavy, and reviewers still comment in Slack). ProtoPeek is the missing middle:
 
 - **Private by default** — an unguessable link plus an email allowlist, expiring in 30 days.
+  Need wider reach? Opt one link into **anyone-with-the-link** access (`--public`); everything
+  else stays restricted.
 - **Feedback with coordinates** — reviewers draw a box on the thing they mean; every
   comment carries a CSS selector, an element snapshot, and a screenshot of what they saw.
 - **Your agent sees the screenshot, not just the note** — `/proto-feedback` downloads each
@@ -135,21 +137,26 @@ The gate, enforced on every single load and every widget API call:
 
 ```
 viewable  =  link is active AND not expired
-allowed   =  cookie email matches the prototype's allowlist
+allowed   =  prototype is public  OR  cookie email matches the allowlist
 access    =  viewable AND allowed
 ```
 
+A **public** link (`--public`, opt-in per prototype) skips the allowlist check — anyone with
+the URL can view — but still collects an email at the gate so comments stay attributed. The
+allowlist is preserved while public, so flipping back to restricted re-applies it unchanged.
+
 Honest caveat (also in the [Terms](https://protopeek.dev/tos)): reviewer identity is
-self-asserted — fine for design review attribution, not a strong identity guarantee.
-Anyone with the link *and* an allowlisted email address's cooperation can view. Links
-self-expire after a flat 30 days, and owners can deactivate — or permanently delete —
-one at any time.
+self-asserted, so the real access boundary is the unguessable link; the allowlist is a soft
+layer on top — fine for design-review attribution, not a strong identity guarantee. Anyone
+with the link *and* an allowlisted email's cooperation can view (or simply anyone with the
+link, when it's public). Links self-expire after a flat 30 days, and owners can deactivate —
+or permanently delete — one at any time.
 
 ## The six skills
 
 | Skill | What it does | Side effects |
 |---|---|---|
-| `/proto-up <file> [--name] [--allow] [--private] [--new] [--update]` | Upload a prototype and state who can view it; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run) and before the first upload of a file |
+| `/proto-up <file> [--name] [--allow] [--public] [--private] [--new] [--update]` | Upload a prototype and state who can view it — an allowlist, or `--public` for anyone with the link; re-running on the same file publishes a new version behind the same link (`--new` forces a fresh one) | Asks before minting a token (first run), before the first upload of a file, and every time `--public` is used |
 | `/proto-status <ref>` | Activity counts: reviewers, comments, **new since last pull** | None — read-only, safe to repeat |
 | `/proto-feedback <ref>` | Pulls annotations + threads + screenshots, synthesizes themes/conflicts/changes, then indexes every item by id so you can say "resolve 47" or "delete 47" | Advances the new-since watermark; resolving is visible to reviewers |
 | `/proto-list` | Every prototype your token owns, with live/expired status, new-feedback hints, and links | Reconciles the local prototype log |
@@ -161,7 +168,8 @@ added behind your back. Your default reviewer domain lives in one visible place
 (`~/.config/protopeek/config`); `/proto-up` includes it explicitly and *tells you* every
 time ("Allowlist: anyone @acme.com — your default"), `--allow` adds people, `--private`
 skips the default, and an empty allowlist means a locked link (fail-closed) with a loud
-warning.
+warning. `--public` is the deliberate exception — it opts one link out of the allowlist
+entirely (anyone with the URL can view), and the skill confirms every time before doing it.
 
 The skills are plain instructions over `curl` — no SDK, no daemon. Read them in
 [`skills/`](skills/) before installing, or vendor and edit them; they're MIT like
@@ -186,10 +194,10 @@ curl -s https://protopeek.dev/api/me -H "Authorization: Bearer $PROTOPEEK_TOKEN"
 |---|---|---|
 | `POST` | `/api/tokens` | mint an anonymous owner token (rate-limited; no auth) |
 | `GET` | `/api/me` | token status + owner summary |
-| `POST` | `/api/prototypes` | multipart upload — `html` file + `name`, `domains`, `emails`, optional `update_of=<uuid>` → `{uuid, url, version, expires_at, rules}`. The allowlist is exactly `domains`/`emails` — no server-side defaults; `rules` in the response is the effective list |
+| `POST` | `/api/prototypes` | multipart upload — `html` file + `name`, `domains`, `emails`, `access_mode` (`public`/`restricted`; blank = no change on update, restricted on create), optional `update_of=<uuid>` → `{uuid, url, version, expires_at, access_mode, rules}`. The allowlist is exactly `domains`/`emails` — no server-side defaults; `rules` is the effective list (ignored when `access_mode` is `public`) |
 | `GET` | `/api/prototypes` | list your prototypes (+ allowlist rules, `total_comments` / `has_new` activity hints) |
 | `GET` | `/api/prototypes/{uuid}` | one prototype |
-| `PATCH` | `/api/prototypes/{uuid}` | `{"name": …, "is_active": …}` — rename, deactivate, or reactivate (reactivating an expired link restarts the 30-day clock) |
+| `PATCH` | `/api/prototypes/{uuid}` | `{"name": …, "is_active": …, "access_mode": …}` — rename, deactivate/reactivate (reactivating an expired link restarts the 30-day clock), or flip `public`↔`restricted` |
 | `DELETE` | `/api/prototypes/{uuid}` | permanently delete — the link, every version's HTML, all feedback and screenshots (204 on success) |
 | `GET` | `/api/prototypes/{uuid}/status` | activity counts — does **not** advance the watermark |
 | `GET` | `/api/prototypes/{uuid}/feedback[?since=ts]` | full agent-shaped payload — **advances** the watermark |
@@ -208,7 +216,8 @@ responses). `status` is `current`, `update-available`, `update-required`, or `un
 `SKILLS_MIN_SUPPORTED` constance knob escalates a release to `update-required` without a
 deploy. The payload is deliberately inert — a version and an enum, never a command — so a
 spoofed response can't put shell in front of an agent. `just check-skill-versions` fails
-the build if the six skills and the manifest disagree.
+the build if the six skills and the manifest disagree — CI runs it (with ruff and the test
+suite) on every push and PR (`.github/workflows/ci.yml`).
 
 The feedback payload per annotation: `id`, `type` (question/change/bug/other), `note`,
 `author`, `version`, `resolved`, `css_selector`, `element_snapshot`, a `thread[]` of
@@ -343,14 +352,17 @@ it that way.
 
 ## FAQ
 
-**Is my prototype public?** No. It's reachable only via its unguessable UUID link, by
-people whose email matches your allowlist, until it expires. There's no directory, no
-search, no crawlable index.
+**Is my prototype public?** Not unless you opt in. By default it's reachable only via its
+unguessable UUID link, by people whose email matches your allowlist, until it expires —
+and either way there's no directory, no search, no crawlable index. You *can* deliberately
+open one link to anyone-with-the-link with `--public` (the skill and dashboard confirm
+first, and it's per-prototype — never the default).
 
-**What if the link leaks?** A leaked link alone doesn't grant access (the email gate
-still applies), and every link dies after 30 days. You can also deactivate it instantly
-(`PATCH /api/prototypes/{uuid}` with `{"is_active": false}`, or the dashboard) — or
-delete the prototype outright.
+**What if the link leaks?** For a restricted link, a leaked link alone doesn't grant access
+(the email gate still applies), and every link dies after 30 days. A `--public` link is, by
+design, viewable by anyone who has the URL — so only make one public when that's what you
+want. Either kind can be deactivated instantly (`PATCH /api/prototypes/{uuid}` with
+`{"is_active": false}`, or the dashboard) — or the prototype deleted outright.
 
 **What exactly does my agent send to protopeek.dev?** The HTML file, a name, and
 allowlist rules — that's the entire upload payload. Conversations never leave your

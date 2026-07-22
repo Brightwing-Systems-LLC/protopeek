@@ -13,7 +13,7 @@ Arguments: a share URL, a bare UUID, or a natural reference ("the old signup car
 
 ```bash
 CFG="${XDG_CONFIG_HOME:-$HOME/.config}/protopeek"
-PP_SKILLS_VERSION=1.3.1
+PP_SKILLS_VERSION=1.4.0
 [ -n "$PROTOPEEK_TOKEN" ] || . "$CFG/config" 2>/dev/null
 ```
 

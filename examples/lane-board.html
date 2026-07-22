@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lane — Board</title>
+<style>
+  :root{
+    --bg:#f6f7fb; --card:#ffffff; --ink:#171a20; --muted:#6b7280; --line:#e8eaf0;
+    --accent:#6366f1; --accent-2:#818cf8;
+    --lab-design:#8b5cf6; --lab-bug:#ef4444; --lab-research:#0ea5e9; --lab-copy:#f59e0b; --lab-ops:#10b981;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+
+  header{display:flex;align-items:center;justify-content:space-between;
+    padding:16px 26px;background:var(--card);border-bottom:1px solid var(--line)}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:1.15rem;letter-spacing:-.02em}
+  .brand .dot{width:24px;height:24px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent-2));
+    display:grid;place-items:center;color:#fff;font-size:13px}
+  .tabs{display:flex;gap:20px;margin-left:20px}
+  .tabs a{color:var(--muted);font-size:.88rem;font-weight:600;text-decoration:none;padding-bottom:2px}
+  .tabs a.on{color:var(--ink);border-bottom:2px solid var(--accent)}
+  .head-right{display:flex;align-items:center;gap:14px}
+  .team{display:flex}
+  .team .av{width:30px;height:30px;border-radius:50%;border:2px solid var(--card);margin-left:-8px;
+    display:grid;place-items:center;color:#fff;font-size:.72rem;font-weight:700}
+  #new-task{border:none;background:var(--accent);color:#fff;font-weight:700;font-size:.85rem;
+    padding:9px 15px;border-radius:9px;cursor:pointer}
+
+  .toolbar{display:flex;align-items:center;justify-content:space-between;padding:20px 26px 6px}
+  .toolbar h1{font-size:1.35rem;margin:0;letter-spacing:-.02em}
+  .toolbar .sub{color:var(--muted);font-size:.85rem;margin-top:2px}
+  .filters{display:flex;gap:8px}
+  .chip{border:1px solid var(--line);background:var(--card);color:var(--muted);
+    font-size:.78rem;font-weight:600;padding:6px 12px;border-radius:8px;cursor:pointer}
+  .chip.on{border-color:var(--accent);color:var(--accent);background:#eef0fe}
+
+  .board{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:16px 26px 40px;align-items:start}
+  .col{background:#eef0f5;border-radius:14px;padding:12px;min-height:120px}
+  .col-h{display:flex;align-items:center;justify-content:space-between;padding:2px 6px 10px}
+  .col-h .name{font-weight:700;font-size:.85rem;display:flex;align-items:center;gap:8px}
+  .col-h .count{color:var(--muted);font-size:.78rem;font-weight:600;background:var(--card);border-radius:20px;padding:1px 8px}
+  .dotm{width:8px;height:8px;border-radius:50%}
+
+  .task{background:var(--card);border:1px solid var(--line);border-radius:11px;padding:12px;margin-bottom:10px;
+    box-shadow:0 1px 2px rgba(16,24,40,.05)}
+  .labels{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap}
+  .lab{font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:6px;color:#fff}
+  .task .title{font-size:.9rem;font-weight:600;line-height:1.35;margin-bottom:10px}
+  .task .meta{display:flex;align-items:center;justify-content:space-between}
+  .task .meta .who{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;color:#fff;font-size:.66rem;font-weight:700}
+  .task .meta .m{color:var(--muted);font-size:.75rem;display:flex;gap:12px;align-items:center}
+  .add{color:var(--muted);font-size:.82rem;font-weight:600;padding:8px 6px;cursor:pointer}
+</style>
+</head>
+<body>
+  <header>
+    <div style="display:flex;align-items:center">
+      <div class="brand"><span class="dot">◧</span> Lane</div>
+      <nav class="tabs">
+        <a class="on" href="#">Board</a>
+        <a href="#">Timeline</a>
+        <a href="#">Backlog</a>
+        <a href="#">Docs</a>
+      </nav>
+    </div>
+    <div class="head-right">
+      <div class="team">
+        <span class="av" style="background:#8b5cf6">AR</span>
+        <span class="av" style="background:#0ea5e9">JM</span>
+        <span class="av" style="background:#10b981">TS</span>
+        <span class="av" style="background:#f59e0b">+3</span>
+      </div>
+      <button id="new-task">+ New task</button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div>
+      <h1>Q3 Launch</h1>
+      <div class="sub">14 tasks · 3 due this week</div>
+    </div>
+    <div class="filters">
+      <span class="chip on">All</span>
+      <span class="chip">Assigned to me</span>
+      <span class="chip">Due soon</span>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="col" id="col-backlog">
+      <div class="col-h"><span class="name"><span class="dotm" style="background:#94a3b8"></span> Backlog</span><span class="count">3</span></div>
+
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-research)">Research</span></div>
+        <div class="title">Interview 5 beta users about onboarding drop-off</div>
+        <div class="meta"><span class="who" style="background:#0ea5e9">JM</span><span class="m"><span>💬 2</span><span>Sep 2</span></span></div>
+      </div>
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-copy)">Copy</span></div>
+        <div class="title">Rewrite empty-state text for the board view</div>
+        <div class="meta"><span class="who" style="background:#f59e0b">TS</span><span class="m"><span>💬 0</span><span>Sep 4</span></span></div>
+      </div>
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-ops)">Ops</span></div>
+        <div class="title">Migrate staging to the new Postgres cluster</div>
+        <div class="meta"><span class="who" style="background:#10b981">AR</span><span class="m"><span>💬 1</span><span>Sep 6</span></span></div>
+      </div>
+      <div class="add">+ Add task</div>
+    </div>
+
+    <div class="col" id="col-progress">
+      <div class="col-h"><span class="name"><span class="dotm" style="background:var(--accent)"></span> In Progress</span><span class="count">2</span></div>
+
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-design)">Design</span><span class="lab" style="background:var(--lab-bug)">Bug</span></div>
+        <div class="title">Fix drag-and-drop jitter on Safari touch</div>
+        <div class="meta"><span class="who" style="background:#8b5cf6">AR</span><span class="m"><span>💬 5</span><span>Today</span></span></div>
+      </div>
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-design)">Design</span></div>
+        <div class="title">Ship the new column-collapse interaction</div>
+        <div class="meta"><span class="who" style="background:#0ea5e9">JM</span><span class="m"><span>💬 3</span><span>Aug 30</span></span></div>
+      </div>
+      <div class="add">+ Add task</div>
+    </div>
+
+    <div class="col" id="col-review">
+      <div class="col-h"><span class="name"><span class="dotm" style="background:var(--lab-copy)"></span> Review</span><span class="count">2</span></div>
+
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-bug)">Bug</span></div>
+        <div class="title">Cards lose their label color after a filter reset</div>
+        <div class="meta"><span class="who" style="background:#10b981">TS</span><span class="m"><span>💬 4</span><span>Today</span></span></div>
+      </div>
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-research)">Research</span></div>
+        <div class="title">Summarize the competitor timeline-view teardown</div>
+        <div class="meta"><span class="who" style="background:#8b5cf6">AR</span><span class="m"><span>💬 1</span><span>Aug 29</span></span></div>
+      </div>
+      <div class="add">+ Add task</div>
+    </div>
+
+    <div class="col" id="col-done">
+      <div class="col-h"><span class="name"><span class="dotm" style="background:var(--lab-ops)"></span> Done</span><span class="count">2</span></div>
+
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-ops)">Ops</span></div>
+        <div class="title">Set up nightly board snapshots</div>
+        <div class="meta"><span class="who" style="background:#10b981">AR</span><span class="m"><span>💬 0</span><span>Aug 26</span></span></div>
+      </div>
+      <div class="task">
+        <div class="labels"><span class="lab" style="background:var(--lab-copy)">Copy</span></div>
+        <div class="title">Finalize the pricing page headline</div>
+        <div class="meta"><span class="who" style="background:#f59e0b">JM</span><span class="m"><span>💬 6</span><span>Aug 24</span></span></div>
+      </div>
+      <div class="add">+ Add task</div>
+    </div>
+  </div>
+  <script>console.log("Lane board prototype loaded");</script>
+</body>
+</html>

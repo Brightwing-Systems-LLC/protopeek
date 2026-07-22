@@ -6,8 +6,13 @@
   <div class="center-narrow">
     <div class="card">
       <h3>Review “{{ prototype.name }}”</h3>
-      <p class="muted">Enter your work email to view this prototype and leave feedback.
-        You won’t need a password.</p>
+      {% if prototype.is_public %}
+        <p class="muted">This prototype is open to anyone with the link. Enter your email
+          so your comments are attributed — any address works, and you won’t need a password.</p>
+      {% else %}
+        <p class="muted">Enter your work email to view this prototype and leave feedback.
+          You won’t need a password.</p>
+      {% endif %}
       <form method="post">
         {% csrf_token %}
         <label>Email</label>

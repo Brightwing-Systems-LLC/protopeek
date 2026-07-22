@@ -32,8 +32,12 @@ class UploadOut(Schema):
     url: str
     version: int
     expires_at: datetime
+    # "restricted" (allowlist applies) or "public" (anyone with the link). Clients read
+    # this to report who can view: public → "anyone with the link", otherwise the rules.
+    access_mode: str
     # The effective allowlist — exactly what the request created, so clients can
-    # show the user who can view without a second call. Empty means locked.
+    # show the user who can view without a second call. Empty means locked (when
+    # restricted); ignored entirely when public.
     rules: list[RuleOut] = []
 
 
@@ -46,6 +50,7 @@ class PrototypeOut(Schema):
     expires_at: datetime
     is_active: bool
     is_expired: bool
+    access_mode: str
     rules: list[RuleOut]
     # Lightweight activity hint ("anything new here?"); the exact new-item count
     # lives in /status, which stays the per-prototype polling endpoint.
@@ -64,6 +69,8 @@ class AccessIn(Schema):
 class PrototypePatch(Schema):
     name: str | None = None
     is_active: bool | None = None
+    # "restricted" | "public"; anything else is ignored, so mode can't be cleared by accident.
+    access_mode: str | None = None
 
 
 class AnnotationPatch(Schema):
@@ -73,6 +80,14 @@ class AnnotationPatch(Schema):
 # ── Helpers ──────────────────────────────────────────────────────────────────
 def _split(raw: str) -> list[str]:
     return [p.strip() for p in (raw or "").replace("\n", ",").split(",") if p.strip()]
+
+
+def _clean_mode(raw) -> str | None:
+    """A recognized access-mode string, or None. None means "not specified" — callers
+    leave the existing mode alone rather than defaulting, so a plain re-publish or an
+    unrelated PATCH can never silently flip a link public or restricted."""
+    mode = (raw or "").strip().lower()
+    return mode if mode in (Prototype.RESTRICTED, Prototype.PUBLIC) else None
 
 
 def _apply_rules(prototype: Prototype, domains, emails):
@@ -126,6 +141,7 @@ def _serialize(p: Prototype, activity: dict | None = None) -> dict:
         "expires_at": p.expires_at,
         "is_active": p.is_active,
         "is_expired": p.is_expired,
+        "access_mode": p.access_mode,
         "rules": [{"kind": r.kind, "value": r.value} for r in p.access_rules.all()],
         "total_comments": a.get("total", 0),
         "last_activity": last,
@@ -141,10 +157,14 @@ def upload_prototype(
     name: str = Form(""),
     domains: str = Form(""),
     emails: str = Form(""),
+    access_mode: str = Form(""),
     update_of: str = Form(""),
 ):
     """Create a new prototype, or (with update_of=<uuid>) a new version behind the
-    same link. Multipart: `html` file + form fields."""
+    same link. Multipart: `html` file + form fields. `access_mode` is "public" (anyone
+    with the link) or "restricted" (the default; allowlist applies); blank leaves an
+    updated link's mode as-is."""
+    mode = _clean_mode(access_mode)
     raw = html.read()
     if len(raw) > settings.PROTOTYPE_MAX_UPLOAD_BYTES:
         return JsonResponse({"detail": "HTML too large"}, status=413)
@@ -162,8 +182,26 @@ def upload_prototype(
         ) + 1
         if name:
             prototype.name = name
+        # Explicit access_mode flips the link public/restricted; a blank field leaves it
+        # alone, so a plain re-publish never changes who can view.
+        if mode is not None:
+            prototype.access_mode = mode
+        # Adding rules on an update is purely additive (get_or_create) — an empty
+        # domains/emails is a no-op, so a plain re-publish never touches who can view,
+        # but `--allow` on an update now works instead of being silently dropped.
+        _apply_rules(prototype, _split(domains), _split(emails))
+        # Publishing a new version is fresh activity: restart the 30-day clock and make
+        # the link live, so v2 never lands behind an expired or deactivated link.
+        prototype.expires_at = timezone.now() + timedelta(
+            hours=settings.PROTOTYPE_EXPIRY_HOURS
+        )
+        prototype.is_active = True
     else:
-        prototype = Prototype(owner=owner, name=name or html.name or "Untitled prototype")
+        prototype = Prototype(
+            owner=owner,
+            name=name or html.name or "Untitled prototype",
+            access_mode=mode or Prototype.RESTRICTED,
+        )
         prototype.save()
         _apply_rules(prototype, _split(domains), _split(emails))
         next_number = 1
@@ -172,7 +210,11 @@ def upload_prototype(
         prototype=prototype, version_number=next_number, html_content=content
     )
     prototype.current_version = version
-    prototype.save(update_fields=["current_version", "name", "expires_at"])
+    prototype.save(
+        update_fields=[
+            "current_version", "name", "expires_at", "is_active", "access_mode"
+        ]
+    )
 
     return {
         "uuid": str(prototype.uuid),
@@ -180,6 +222,7 @@ def upload_prototype(
         "url": prototype.share_url,
         "version": version.version_number,
         "expires_at": prototype.expires_at,
+        "access_mode": prototype.access_mode,
         "rules": [
             {"kind": r.kind, "value": r.value} for r in prototype.access_rules.all()
         ],
@@ -241,6 +284,10 @@ def edit_prototype(request, uuid: str, payload: PrototypePatch):
                 hours=settings.PROTOTYPE_EXPIRY_HOURS
             )
             fields.append("expires_at")
+    mode = _clean_mode(payload.access_mode)
+    if mode is not None:
+        p.access_mode = mode
+        fields.append("access_mode")
     if fields:
         p.save(update_fields=fields)
     return _serialize(p)

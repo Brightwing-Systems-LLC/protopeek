@@ -39,6 +39,16 @@
       </div>
       <div class="row">
         <div>
+          <label>General access</label>
+          <select name="access_mode">
+            <option value="restricted" selected>Restricted — only the allowlist below</option>
+            <option value="public">Anyone with the link</option>
+          </select>
+        </div>
+        <div></div>
+      </div>
+      <div class="row">
+        <div>
           <label>Allow domains (comma-separated)</label>
           <input type="text" name="domains" value="{{ default_domain }}" placeholder="acme.com, partner.com">
         </div>
@@ -48,8 +58,10 @@
         </div>
       </div>
       <p class="muted" style="font-size:.8rem;margin-top:8px;">
-        Exactly these rules apply — nothing is added automatically. Clear both fields and
-        nobody can view until you add reviewers. Links expire in 30 days.
+        When <strong>Restricted</strong>, exactly these rules apply — nothing is added
+        automatically, and clearing both fields means nobody can view until you add reviewers.
+        <strong>Anyone with the link</strong> ignores the allowlist and lets in anyone who has
+        the URL (they still enter an email so comments are attributed). Links expire in 30 days.
       </p>
       <button class="btn" type="submit">Upload &amp; get link</button>
     </form>
@@ -70,7 +82,11 @@
           <div class="meta">
             v{{ p.current_version.version_number|default:"—" }} ·
             expires {{ p.expires_at }} ·
-            {{ p.access_rules.count }} rule{{ p.access_rules.count|pluralize }}
+            {% if p.is_public %}
+              <span class="pill" style="color:var(--accent);border-color:var(--accent)">anyone with the link</span>
+            {% else %}
+              {{ p.access_rules.count }} rule{{ p.access_rules.count|pluralize }}
+            {% endif %}
           </div>
           <div class="copy" style="margin-top:10px;">
             <code id="url-{{ p.uuid }}">{{ p.share_url }}</code>
@@ -89,6 +105,18 @@
           <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
             {% csrf_token %}<input type="hidden" name="action" value="reactivate">
             <button class="btn btn-sm btn-ghost" type="submit">Re-open</button>
+          </form>
+        {% endif %}
+        {% if p.is_public %}
+          <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;">
+            {% csrf_token %}<input type="hidden" name="action" value="make_restricted">
+            <button class="btn btn-sm btn-ghost" type="submit">Make restricted</button>
+          </form>
+        {% else %}
+          <form method="post" action="{% url 'prototype_action' p.uuid %}" class="inline" style="flex:0;"
+                onsubmit="return confirm('Make “{{ p.name|escapejs }}” viewable by anyone with the link? The allowlist stops applying until you switch it back.')">
+            {% csrf_token %}<input type="hidden" name="action" value="make_public">
+            <button class="btn btn-sm btn-ghost" type="submit">Make public</button>
           </form>
         {% endif %}
         <a class="btn btn-sm btn-ghost" href="{% url 'prototype_feedback' p.uuid %}" style="flex:0;">Feedback</a>

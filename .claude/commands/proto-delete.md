@@ -12,9 +12,8 @@ Arguments: `$ARGUMENTS` — a share URL, a bare UUID, or a natural reference ("t
 
 Steps:
 1. **Load config** (global store, mint-once) — same as `/proto-up` step 1.
-2. **Resolve the reference → UUID** (see `AGENTS.md` → "Resolving a reference"): a URL/UUID is
-   used directly; otherwise match `$CFG/prototypes.json` by name / filename / path / project /
-   recency.
+2. **Resolve the reference → UUID:** a URL/UUID is used directly; otherwise match
+   `$CFG/prototypes.json` by name / filename / path / project / recency.
 3. **Confirm — always, even for an explicit URL/UUID.** Show the resolved target (name, share
    URL, version, live/expired) and make sure the user wants it *gone*, not just switched off:
    - If they only want the link dead but the feedback kept (reversible), offer deactivation

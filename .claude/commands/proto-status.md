@@ -11,10 +11,9 @@ Arguments: `$ARGUMENTS` — a share URL, a bare UUID, or a natural reference ("y
 
 Steps:
 1. **Load config** (global store, mint-once) — same as `/proto-up` step 1.
-2. **Resolve the reference → UUID** (see `AGENTS.md` → "Resolving a reference"): a URL/UUID is used
-   directly; otherwise match `$CFG/prototypes.json` by name / filename / path / project / recency.
-   If more than one candidate, list them and ask — resolution here is safe (this endpoint is
-   read-only).
+2. **Resolve the reference → UUID:** a URL/UUID is used directly; otherwise match
+   `$CFG/prototypes.json` by name / filename / path / project / recency. If more than one
+   candidate, list them and ask — resolution here is safe (this endpoint is read-only).
 3. Run:
    ```bash
    curl -s "$PROTOPEEK_BASE_URL/api/prototypes/<uuid>/status" -H "Authorization: Bearer $PROTOPEEK_TOKEN" -H "X-ProtoPeek-Skills: $PP_SKILLS_VERSION"

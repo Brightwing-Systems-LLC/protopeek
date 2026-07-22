@@ -56,6 +56,62 @@ def test_allowlist_domain_and_email(prototype):
     assert not is_allowed(prototype, "not-an-email")
 
 
+def test_public_mode_admits_any_wellformed_email(prototype):
+    prototype.access_mode = Prototype.PUBLIC
+    prototype.save(update_fields=["access_mode"])
+    # example.com is the only rule, but public ignores the allowlist entirely.
+    assert is_allowed(prototype, "stranger@nowhere.io")
+    assert is_allowed(prototype, "someone@gmail.com")
+    # …a malformed address is still rejected — the gate collects a real email for attribution.
+    assert not is_allowed(prototype, "not-an-email")
+    assert not is_allowed(prototype, "")
+
+
+def test_public_prototype_lets_a_non_allowlisted_reviewer_in(prototype):
+    prototype.access_mode = Prototype.PUBLIC
+    prototype.save(update_fields=["access_mode"])
+    c = Client()
+    # An email matching no rule passes the gate, is remembered, and reaches the viewer.
+    r = c.post(reverse("enter", args=[prototype.uuid]), {"email": "outsider@elsewhere.com"})
+    assert r.status_code == 302
+    assert r.url == reverse("viewer", args=[prototype.uuid])
+    assert c.get(reverse("viewer", args=[prototype.uuid])).status_code == 200
+
+
+def test_public_reviewer_can_comment_and_is_attributed(prototype):
+    prototype.access_mode = Prototype.PUBLIC
+    prototype.save(update_fields=["access_mode"])
+    c = Client()
+    c.post(reverse("enter", args=[prototype.uuid]), {"email": "outsider@elsewhere.com"})
+    r = c.post(
+        "/api/widget",
+        data=json.dumps(
+            {
+                "projectName": str(prototype.uuid),
+                "type": "bug",
+                "message": "looks off",
+                "clientId": "c1",
+                "annotations": [{"anchor": {"cssSelector": "#hero"}}],
+            }
+        ),
+        content_type="application/json",
+    )
+    assert r.status_code < 300
+    a = Annotation.objects.get()
+    # The whole loop works for a public reviewer: comment accepted, author stamped from
+    # the gate cookie even though they're on no allowlist.
+    assert a.author_email == "outsider@elsewhere.com"
+
+
+def test_restricted_prototype_still_blocks_a_stranger(prototype):
+    # Same reviewer, default (restricted) mode: the allowlist keeps them out.
+    c = Client()
+    r = c.post(reverse("enter", args=[prototype.uuid]), {"email": "outsider@elsewhere.com"})
+    assert r.status_code == 200  # re-renders the gate with an error, no redirect
+    # even forcing the identity cookie, the viewer denies them
+    assert not is_allowed(prototype, "outsider@elsewhere.com")
+
+
 # ── Upload API ───────────────────────────────────────────────────────────────
 def test_upload_requires_token(db):
     c = Client()
@@ -119,6 +175,16 @@ def test_raw_injects_overlay_and_preserves_content(prototype):
     assert "siteping.global.js" in body
     assert "id='hero'" in body  # original prototype content preserved
     assert resp.headers.get("X-Frame-Options") == "SAMEORIGIN"
+
+
+def test_viewer_suppresses_ios_horizontal_wobble(prototype):
+    c = Client()
+    c.post(reverse("enter", args=[prototype.uuid]), {"email": "sam@example.com"})
+    resp = c.get(reverse("viewer", args=[prototype.uuid]))
+    assert resp.status_code == 200
+    body = resp.content.decode()
+    assert "viewer-chrome.js" in body            # reviewer chrome is injected on the viewer
+    assert "overscroll-behavior-x:none" in body  # kills the iPhone side-to-side rubber-band
 
 
 def test_expired_link_is_gone(prototype):

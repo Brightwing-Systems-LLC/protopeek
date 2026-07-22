@@ -30,6 +30,17 @@ class Prototype(models.Model):
     # Named-invite mode is opt-in; open-domain (roster-less) is the default.
     named_invite_mode = models.BooleanField(default=False)
 
+    # General access, the one link-wide switch (à la Google Docs' "Restricted" vs
+    # "Anyone with the link"). PUBLIC is always an explicit opt-in — never the default,
+    # and never reachable by omitting rules (an empty allowlist stays fail-closed). Kept
+    # separate from access_rules so flipping public↔restricted preserves the curated list.
+    RESTRICTED = "restricted"
+    PUBLIC = "public"
+    ACCESS_MODE_CHOICES = [(RESTRICTED, "Restricted"), (PUBLIC, "Anyone with the link")]
+    access_mode = models.CharField(
+        max_length=12, choices=ACCESS_MODE_CHOICES, default=RESTRICTED
+    )
+
     class Meta:
         ordering = ["-created_at"]
 
@@ -51,6 +62,11 @@ class Prototype(models.Model):
     def is_viewable(self) -> bool:
         """The UUID-link gate: active AND not expired."""
         return self.is_active and not self.is_expired
+
+    @property
+    def is_public(self) -> bool:
+        """Anyone with the link can view (allowlist not consulted)."""
+        return self.access_mode == self.PUBLIC
 
     @property
     def share_url(self) -> str:

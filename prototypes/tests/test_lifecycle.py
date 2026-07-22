@@ -217,6 +217,122 @@ def test_upload_returns_effective_rules(owner, device_token):
     assert len(rules) == 2  # exactly what was sent — nothing seeded
 
 
+def _upload(device_token, *, name="P", domains="", emails="", access_mode="", update_of=""):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    data = {
+        "html": SimpleUploadedFile("p.html", PROTO_HTML.encode(), content_type="text/html"),
+        "name": name,
+        "domains": domains,
+        "emails": emails,
+    }
+    if access_mode:
+        data["access_mode"] = access_mode
+    if update_of:
+        data["update_of"] = update_of
+    return Client().post("/api/prototypes", data, **_auth(device_token))
+
+
+def test_update_adds_allowlist_rules_without_removing_existing(owner, device_token):
+    first = _upload(device_token, domains="acme.com").json()
+    uuid = first["uuid"]
+
+    resp = _upload(device_token, update_of=uuid, emails="jane@partner.com")
+    assert resp.status_code == 200
+    rules = resp.json()["rules"]
+    # v2 is behind the same link, additive: the original domain is kept and the new
+    # email is added — `--allow` on an update is honored, not silently dropped.
+    assert resp.json()["version"] == 2
+    assert {"kind": "domain", "value": "acme.com"} in rules
+    assert {"kind": "email", "value": "jane@partner.com"} in rules
+    assert len(rules) == 2
+
+
+def test_plain_update_leaves_the_allowlist_untouched(owner, device_token):
+    uuid = _upload(device_token, domains="acme.com").json()["uuid"]
+    resp = _upload(device_token, update_of=uuid)  # no domains/emails
+    rules = resp.json()["rules"]
+    assert rules == [{"kind": "domain", "value": "acme.com"}]
+
+
+def test_update_restarts_the_expiry_clock_and_reactivates(owner, device_token):
+    uuid = _upload(device_token, domains="acme.com").json()["uuid"]
+    p = Prototype.objects.get(uuid=uuid)
+    # Simulate a prototype that has expired and been deactivated.
+    p.expires_at = timezone.now() - timedelta(days=1)
+    p.is_active = False
+    p.save(update_fields=["expires_at", "is_active"])
+
+    _upload(device_token, update_of=uuid)
+    p.refresh_from_db()
+    # Publishing v2 makes the link live again and restarts the 30-day clock, so it never
+    # lands behind a dead link.
+    assert p.is_active is True
+    assert p.is_expired is False
+    assert p.is_viewable is True
+
+
+# ── Access mode (public / restricted) ────────────────────────────────────────
+def test_upload_defaults_to_restricted(owner, device_token):
+    assert _upload(device_token).json()["access_mode"] == "restricted"
+
+
+def test_upload_public_sets_mode_and_reports_it(owner, device_token):
+    data = _upload(device_token, access_mode="public").json()
+    assert data["access_mode"] == "public"
+    assert Prototype.objects.get(uuid=data["uuid"]).is_public
+
+
+def test_plain_update_leaves_access_mode_untouched(owner, device_token):
+    uuid = _upload(device_token, access_mode="public").json()["uuid"]
+    # A plain re-publish sends a blank access_mode and must not silently re-lock the link.
+    assert _upload(device_token, update_of=uuid).json()["access_mode"] == "public"
+
+
+def test_update_flips_mode_both_ways_and_preserves_allowlist(owner, device_token):
+    uuid = _upload(device_token, domains="acme.com").json()["uuid"]
+    assert _upload(device_token, update_of=uuid, access_mode="public").json()["access_mode"] == "public"
+    # Flipping back to restricted re-applies the allowlist that was preserved throughout.
+    resp = _upload(device_token, update_of=uuid, access_mode="restricted").json()
+    assert resp["access_mode"] == "restricted"
+    assert {"kind": "domain", "value": "acme.com"} in resp["rules"]
+
+
+def test_patch_flips_access_mode_and_ignores_junk(prototype, device_token):
+    assert _patch(prototype.uuid, {"access_mode": "public"}, device_token).json()["access_mode"] == "public"
+    # An unrecognized value is ignored, never applied — the mode can't be cleared by accident.
+    assert _patch(prototype.uuid, {"access_mode": "bogus"}, device_token).json()["access_mode"] == "public"
+    assert _patch(prototype.uuid, {"access_mode": "restricted"}, device_token).json()["access_mode"] == "restricted"
+
+
+def test_dashboard_make_public_and_restricted_actions(prototype, owner):
+    c = Client()
+    c.force_login(owner)
+    c.post(reverse("prototype_action", args=[prototype.uuid]), {"action": "make_public"})
+    prototype.refresh_from_db()
+    assert prototype.is_public
+    c.post(reverse("prototype_action", args=[prototype.uuid]), {"action": "make_restricted"})
+    prototype.refresh_from_db()
+    assert not prototype.is_public
+
+
+def test_dashboard_upload_can_set_public(owner):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    c = Client()
+    c.force_login(owner)
+    c.post(
+        reverse("dashboard_upload"),
+        {
+            "html": SimpleUploadedFile(
+                "p.html", PROTO_HTML.encode(), content_type="text/html"
+            ),
+            "access_mode": "public",
+        },
+    )
+    assert Prototype.objects.get().is_public
+
+
 def test_dashboard_prefills_default_domain_without_seeding(owner):
     owner.default_allow_domain = "work.com"
     owner.save(update_fields=["default_allow_domain"])

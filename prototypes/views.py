@@ -68,7 +68,12 @@ def dashboard_upload(request):
         return redirect("dashboard")
 
     name = request.POST.get("name") or upload.name or "Untitled prototype"
-    prototype = Prototype(owner=request.user, name=name)
+    mode = (request.POST.get("access_mode") or "").strip().lower()
+    prototype = Prototype(
+        owner=request.user,
+        name=name,
+        access_mode=Prototype.PUBLIC if mode == "public" else Prototype.RESTRICTED,
+    )
     prototype.save()
 
     for raw in (request.POST.get("domains") or "").replace("\n", ",").split(","):
@@ -110,6 +115,14 @@ def prototype_action(request, uuid):
             )
         prototype.save(update_fields=["is_active", "expires_at"])
         messages.success(request, "Re-opened.")
+    elif action == "make_public":
+        prototype.access_mode = Prototype.PUBLIC
+        prototype.save(update_fields=["access_mode"])
+        messages.success(request, "Anyone with the link can now view this.")
+    elif action == "make_restricted":
+        prototype.access_mode = Prototype.RESTRICTED
+        prototype.save(update_fields=["access_mode"])
+        messages.success(request, "Restricted to the allowlist below.")
     elif action == "delete":
         name = prototype.name
         prototype.delete()
@@ -302,6 +315,11 @@ def _inject_chrome(html: str, prototype, email: str) -> str:
         # while reviewing (they fire mid-drag when drawing an annotation box). Re-enabled
         # inside the SitePing widget + form fields so the comment composer still works.
         "\n<style>"
+        # Kill iOS Safari's horizontal rubber-band (the side-to-side "wobble") on the served
+        # prototype. overscroll-behavior-x removes the elastic bounce past the page edges
+        # WITHOUT hiding overflow — a genuinely wide prototype can still be scrolled to reveal
+        # all of it, which overflow-x:hidden/clip would wrongly clip in a review context.
+        "html{overscroll-behavior-x:none}"
         "body{touch-action:manipulation;-webkit-touch-callout:none;"
         "-webkit-user-select:none;user-select:none}"
         "siteping-widget,input,textarea,select,[contenteditable]"

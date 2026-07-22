@@ -53,9 +53,13 @@ link + email allowlist, for 30 days) and get an OK; if it visibly contains real 
 offer placeholders first. No need to re-ask on an update or a re-share already approved.
 
 ## Operations  (curl; auth header: -H "Authorization: Bearer $PROTOPEEK_TOKEN")
-- up:       POST /api/prototypes  -F html=@<path> -F name=... [-F domains=...] [-F emails=...] [-F update_of=<uuid>]
+- up:       POST /api/prototypes  -F html=@<path> -F name=... [-F domains=...] [-F emails=...] [-F access_mode=public|restricted] [-F update_of=<uuid>]
             (rules = exactly what you send — include $PROTOPEEK_DEFAULT_DOMAIN in domains unless a
-            locked/private share is intended; the response's `rules` is the effective allowlist)
+            locked/private share is intended; the response's `rules` is the effective allowlist.
+            access_mode=public opens the link to ANYONE with the URL (allowlist ignored; reviewers
+            still enter an email for attribution) — confirm with the user EVERY time before using it.
+            Blank leaves an updated link's mode unchanged and defaults to restricted on create;
+            the response echoes `access_mode`)
 - list:     GET  /api/prototypes                              (includes total_comments / has_new hints)
 - status:   GET  /api/prototypes/<uuid>/status                (read-only)
 - feedback: GET  /api/prototypes/<uuid>/feedback[?since=<ts>]   (advances the watermark)
@@ -66,7 +70,7 @@ offer placeholders first. No need to re-ask on an update or a re-share already a
             (reviewers SEE this — resolve once the fix is live, not when you start it)
 - unpin:    DELETE /api/prototypes/<uuid>/annotations/<id>   (PERMANENT — the pin, its
             screenshot and its whole reply thread; confirm first, resolve is reversible)
-- edit:     PATCH /api/prototypes/<uuid>  '{"name":"...","is_active":true|false}'  (rename / deactivate / reactivate)
+- edit:     PATCH /api/prototypes/<uuid>  '{"name":"...","is_active":true|false,"access_mode":"public|restricted"}'  (rename / deactivate / reactivate / flip public↔restricted)
 - delete:   DELETE /api/prototypes/<uuid>   (PERMANENT — link, versions, all feedback; confirm with the user first)
 - me:       GET  /api/me
 
